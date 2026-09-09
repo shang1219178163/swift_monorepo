@@ -21,6 +21,7 @@
 
 - `JsonCodableClient` 使用 `user.json` 资源演示 `fromData` / `toJson`
 - monorepo 示例 App `app/example` 本地依赖本包做编解码演示
+- 包内 `package func dlog`（仅本包目标可见）
 
 ## [0.1.0] - 2026-09-09
 
