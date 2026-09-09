@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		147AAFB1305115E70007D45C /* JsonCodable in Frameworks */ = {isa = PBXBuildFile; productRef = 147AAFB0305115E70007D45C /* JsonCodable */; };
+		147AAFB2305115E70007D45C /* Navigator in Frameworks */ = {isa = PBXBuildFile; productRef = 147AAFB3305115E70007D45C /* Navigator */; };
+		147AAFB4305115E70007D45C /* SFSafeSymbols in Frameworks */ = {isa = PBXBuildFile; productRef = 147AAFB5305115E70007D45C /* SFSafeSymbols */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +59,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				147AAFB1305115E70007D45C /* JsonCodable in Frameworks */,
+				147AAFB2305115E70007D45C /* Navigator in Frameworks */,
+				147AAFB4305115E70007D45C /* SFSafeSymbols in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -118,6 +122,8 @@
 			name = example;
 			packageProductDependencies = (
 				147AAFB0305115E70007D45C /* JsonCodable */,
+				147AAFB3305115E70007D45C /* Navigator */,
+				147AAFB5305115E70007D45C /* SFSafeSymbols */,
 			);
 			productName = example;
 			productReference = 147AAF78305112C90007D45C /* example.app */;
@@ -203,6 +209,8 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				147AAFAE305115E70007D45C /* XCLocalSwiftPackageReference "../../packages/JsonCodable" */,
+				14FC04A230514B6300AC220C /* XCLocalSwiftPackageReference "../../packages/Navigator" */,
+				147AAFB6305115E70007D45C /* XCRemoteSwiftPackageReference "SFSafeSymbols" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 147AAF79305112C90007D45C /* Products */;
@@ -573,13 +581,38 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../packages/JsonCodable;
 		};
+		14FC04A230514B6300AC220C /* XCLocalSwiftPackageReference "../../packages/Navigator" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../packages/Navigator;
+		};
 /* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		147AAFB6305115E70007D45C /* XCRemoteSwiftPackageReference "SFSafeSymbols" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SFSafeSymbols/SFSafeSymbols.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		147AAFB0305115E70007D45C /* JsonCodable */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 147AAFAE305115E70007D45C /* XCLocalSwiftPackageReference "../../packages/JsonCodable" */;
 			productName = JsonCodable;
+		};
+		147AAFB3305115E70007D45C /* Navigator */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 14FC04A230514B6300AC220C /* XCLocalSwiftPackageReference "../../packages/Navigator" */;
+			productName = Navigator;
+		};
+		147AAFB5305115E70007D45C /* SFSafeSymbols */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 147AAFB6305115E70007D45C /* XCRemoteSwiftPackageReference "SFSafeSymbols" */;
+			productName = SFSafeSymbols;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

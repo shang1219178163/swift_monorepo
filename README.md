@@ -1,12 +1,13 @@
 # swift_macro
 
-Swift 宏相关库的 monorepo。每个可发布库放在 `packages/<Name>/`，自带独立 `Package.swift`；仓库根目录的伞形 `Package.swift` 聚合产品，供远程 SPM 依赖与统一 `swift test`。
+Swift 宏与通用 SwiftUI 组件的 monorepo。每个可发布库放在 `packages/<Name>/`，自带独立 `Package.swift`；仓库根目录的伞形 `Package.swift` 聚合产品，供远程 SPM 依赖与统一 `swift test`。
 
 ```text
 swift_macro/
 ├── Package.swift                 # 伞形包（对外产品入口）
 ├── packages/
-│   └── JsonCodable/              # @Codable / @CodingKey 与 JSON 辅助 API
+│   ├── JsonCodable/              # @Codable / @CodingKey 与 JSON 辅助 API
+│   └── Navigator/                # SwiftUI 具名路由引擎（无业务表）
 ├── app/
 │   └── example/                  # iOS 示例（本地依赖 JsonCodable）
 └── README.md
@@ -15,7 +16,7 @@ swift_macro/
 ## 要求
 
 - Swift 6.1+
-- 平台随各子包声明（JsonCodable：macOS 10.15+ / iOS 13+ 等）
+- 平台随各子包声明（JsonCodable 独立包：macOS 10.15+ / iOS 13+；伞形包与 Navigator：iOS 16+ / macOS 13+）
 
 ## 安装（远程）
 
@@ -33,7 +34,8 @@ dependencies: [
 .target(
     name: "YourTarget",
     dependencies: [
-        .product(name: "JsonCodable", package: "swift-macro")
+        .product(name: "JsonCodable", package: "swift_monorepo"),
+        .product(name: "Navigator", package: "swift_monorepo"),
     ]
 )
 ```
@@ -42,25 +44,31 @@ dependencies: [
 
 ```bash
 # 仅某个包
-cd packages/JsonCodable
-swift build
-swift test
-swift run JsonCodableClient
+cd packages/JsonCodable && swift build && swift test
+cd packages/Navigator && swift build && swift test
 
 # 根目录（伞形包，跑全部已聚合测试）
 swift build
 swift test
 ```
 
-本地路径依赖某个包：
+本地路径依赖：
 
 ```swift
 .package(path: "../swift_macro/packages/JsonCodable")
+.package(path: "../swift_macro/packages/Navigator")
 ```
 
 iOS 示例：用 Xcode 打开 `app/example/example.xcodeproj`（已本地引用 `../../packages/JsonCodable`）。修改包源码后重新编译 App 即可同步。
 
-## JsonCodable 速览
+## 包一览
+
+| 包 | 说明 |
+| --- | --- |
+| [JsonCodable](packages/JsonCodable) | `@Codable` / `@CodingKey`；`fromData` / `fromJson` / `toJson` |
+| [Navigator](packages/Navigator) | 多 Tab 具名路由；`NavigatorShort` / `navigationBarCustom` |
+
+### JsonCodable 速览
 
 | API | 方向 |
 | --- | --- |
@@ -68,19 +76,26 @@ iOS 示例：用 Xcode 打开 `app/example/example.xcodeproj`（已本地引用 
 | `Type.fromJson(_:)` | 字典 → 模型 |
 | `value.toJson()` | 模型 → 字典 |
 
-详情见 [packages/JsonCodable/README.md](packages/JsonCodable/README.md)。
+### Navigator 速览
+
+业务侧保留路由表（如 `AppRouter` / `AppTab`），启动时注入：
+
+```swift
+NavigatorShort.setup(
+    tabCount: AppTab.count,
+    containsRoute: AppRouter.contains,
+    preventsDuplicate: AppRouter.preventDuplicates,
+    titleProvider: { AppRouter.page(for: $0).title }
+)
+```
+
+详情见各包 README。
 
 ## 添加新包
 
 1. 在 `packages/<Name>/` 创建独立 SPM 包（`Package.swift`、`Sources/`、`Tests/`）。
 2. 在根 `Package.swift` 增加对应 `products` / `targets`（`path` 指向该包源码目录）。
 3. 更新本 README 的包列表。
-
-## 包一览
-
-| 包 | 说明 |
-| --- | --- |
-| [JsonCodable](packages/JsonCodable) | `@Codable` / `@CodingKey` 宏；`fromData` / `fromJson` / `toJson` |
 
 ## License
 

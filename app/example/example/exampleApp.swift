@@ -6,12 +6,18 @@
 //
 
 import SwiftUI
+import Navigator
 
 @main
 struct exampleApp: App {
+    init() {
+        AppTab.setupNavigator()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(NavigatorShort.shared)
         }
     }
 }

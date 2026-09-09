@@ -28,7 +28,7 @@ dependencies: [
 .target(
     name: "YourTarget",
     dependencies: [
-        .product(name: "JsonCodable", package: "swift-macro")
+        .product(name: "JsonCodable", package: "swift_monorepo")
     ]
 )
 ```
