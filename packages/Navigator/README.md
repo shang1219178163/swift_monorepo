@@ -46,7 +46,8 @@ NavigatorShort.setup(
     initialTab: 0,
     containsRoute: { name in AppRouter.contains(name) },
     preventsDuplicate: { name in AppRouter.preventDuplicates(for: name) },
-    titleProvider: { name in AppRouter.page(for: name).title }
+    titleProvider: { name in AppRouter.page(for: name).title },
+    unknownRoute: "/unknown"
 )
 
 // 2. 根视图挂载
@@ -65,19 +66,25 @@ Task {
 NavigatorShort.back(result: ["ok": true])
 ```
 
-页面内用 `@Environment(\.routeSettings)` 取当前页参数；`async` 跳转的返回值 = 目标页 `pop(result:)` / `back(result:)` 传入的字典（侧滑返回则为 `nil`）。
+页面内用 `@Environment(\.routeSettings)` 取当前页参数。
+
+**返回值约定：**
+
+- 页面已打开：`async` 返回值 = 目标页 `pop(result:)` / `back(result:)`；侧滑或未带 result 时为 `nil`
+- 目标路由不存在：跳转 `unknownRoute`（必填），并把原目标名写入 `args[NavigatorArgKey.intendedRoute]`，其余 args 原样保留；若 unknown 本身未注册进 `containsRoute`，则返回 `nil`
+- 防重跳过：直接返回 `nil`（不抛错）
 
 ## 路由跳转方法
 
-日常推荐用 `NavigatorShort`（GetX 风格）；需要细粒度控制时用 `NavigatorShort.shared`（即 `Navigator`）。
+日常推荐用 `NavigatorShort`（GetX 风格）；需要细粒度控制时用 `NavigatorShort.shared`（即 `Navigator`）。须先 `setup`；`onRouteChange` / `navigationBarCustom` 依赖 `@EnvironmentObject` 中的同一引擎实例。
 
 ### 对照表
 
 | NavigatorShort | Navigator | 含义 |
 | --- | --- | --- |
 | `toNamed(_:args:)` | `pushNamed(_:args:)` | 压入新页，挂起直到该页 `pop`/`back` |
-| `offNamed(_:args:result:)` | `pushReplacementNamed(_:args:result:)` | 先 pop 当前页，再 push 新页 |
-| `offAllNamed(_:args:)` | `pushNamedAndRemoveUntil(_: { _ in false }, args:)` | 清空当前 Tab 栈后 push |
+| `offNamed(_:args:result:)` | `pushReplacementNamed(_:args:result:)` | 先校验再 pop 当前页，再 push |
+| `offAllNamed(_:args:result:)` | `pushNamedAndRemoveUntil(_: { _ in false }, …)` | 清空当前 Tab 栈后 push |
 | — | `pushNamedAndRemoveUntil(_:_:args:result:)` | 先 `popUntil`，再 push |
 | `until(_:result:)` | `popUntil(_:result:)` | 回退直到谓词为 true（该页保留） |
 | `back(count:result:)` | `pop(count:result:)` | 弹出一层或多层 |
@@ -85,24 +92,18 @@ NavigatorShort.back(result: ["ok": true])
 ### NavigatorShort
 
 ```swift
-// push，并可拿到目标页返回值
-let result = await NavigatorShort.toNamed("/detail", args: ["id": 1])
-
-// 替换当前页（result 交给被替换页的 await）
-let next = await NavigatorShort.offNamed(
-    "/home",
-    args: [:],
-    result: ["replaced": true]
+NavigatorShort.setup(
+    tabCount: 3,
+    containsRoute: AppRouter.contains,
+    unknownRoute: "/unknown"   // 不存在的路由 → 此页
 )
 
-// 清栈再进新页
-_ = await NavigatorShort.offAllNamed("/login")
+let result = await NavigatorShort.toNamed("/detail", args: ["id": 1])
+// 不存在时：等价于 toNamed("/unknown", args: ["id": 1, "intendedRoute": "/nope"])
 
-// 回退到栈中第一个满足条件的路由（该路由保留）
+_ = await NavigatorShort.offNamed("/home", result: ["replaced": true])
+_ = await NavigatorShort.offAllNamed("/login", result: ["cleared": true])
 NavigatorShort.until({ $0 == "/home" }, result: ["from": "settings"])
-
-// 返回上一页（可多级）；result 交给栈顶被移除页的 await
-NavigatorShort.back()
 NavigatorShort.back(count: 2, result: ["ok": true])
 ```
 
@@ -116,10 +117,9 @@ _ = await nav.pushNamed("/detail", args: ["id": 1])
 _ = await nav.pushReplacementNamed(
     "/other",
     args: [:],
-    result: ["bye": true]   // → 被替换页
+    result: ["bye": true]
 )
 
-// 保留谓词为 true 的页，再 push
 _ = await nav.pushNamedAndRemoveUntil(
     "/checkout",
     { $0 == "/cart" },
@@ -154,13 +154,16 @@ NavigationStack(path: NavigatorShort.shared.pathBinding(for: tab)) {
 
 | API | 说明 |
 | --- | --- |
-| `route` / `routePre` | 当前 / 上一路由 `RouteSettings` |
-| `routeName` / `routeNamePre` | 当前 / 上一路由名 |
-| `pageRouteNames` / `routes` | 当前 Tab 路由名栈（自底向顶） |
+| `route` / `routePre` | 焦点路由 / 切换前路由（切 Tab 会同步为该 Tab 栈顶） |
+| `routeName` / `routeNamePre` | 同上的路由名 |
+| `pageRouteNames` / `routes` | **当前选中 Tab** 路由名栈（自底向顶） |
 | `canPop` | 当前 Tab 是否可 pop |
-| `currentSettings` / `currentArgs` | 栈顶设置 / 参数（本页优先用 `@Environment(\.routeSettings)`） |
+| `currentSettings` / `currentArgs` | 当前 Tab 栈顶（本页优先用 `@Environment(\.routeSettings)`） |
 | `isStackEmpty(for:)` | 指定 Tab 栈是否为空 |
 | `isLog` | 是否打印路由日志 |
+| `unknownRoute` | 必填；目标不存在时的回退路由名（非空） |
+| `NavigatorArgKey.intendedRoute` | 回退时写入 args 的原目标键 |
+| `NavigatorShort.reset()` | 清空引擎（测试 / Preview） |
 
 ## 其它类型
 

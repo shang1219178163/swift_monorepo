@@ -581,13 +581,13 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../packages/JsonCodable;
 		};
-		14FC04A230514B6300AC220C /* XCLocalSwiftPackageReference "../../packages/Navigator" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../packages/Navigator;
-		};
 		147AAFB6305115E70007D45C /* XCLocalSwiftPackageReference "../../third_party/SFSafeSymbols" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../third_party/SFSafeSymbols;
+		};
+		14FC04A230514B6300AC220C /* XCLocalSwiftPackageReference "../../packages/Navigator" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../packages/Navigator;
 		};
 /* End XCLocalSwiftPackageReference section */
 

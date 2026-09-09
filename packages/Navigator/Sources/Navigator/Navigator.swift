@@ -22,6 +22,11 @@ public struct RouteListenerID: Hashable, Sendable {
     fileprivate let uuid = UUID()
 }
 
+/// 回退到 unknown 路由时，args 中写入「原目标路由名」的键。
+public enum NavigatorArgKey {
+    public static let intendedRoute = "intendedRoute"
+}
+
 // MARK: - RouteSettings
 
 /// `[String: Any]` 非 Sendable，用盒子承接 continuation 回传（Swift 6）
@@ -37,6 +42,9 @@ public final class RouteSettings: Hashable {
     public var args: [String: Any]?
 
     private var continuation: CheckedContinuation<RouteResultBox, Never>?
+    /// `complete` 早于 `waitForResult` 时暂存，避免丢结果 / await 挂死
+    private var pendingResult: RouteResultBox?
+    private var hasCompleted = false
 
     public init(name: String, args: [String: Any]? = nil) {
         self.name = name
@@ -45,7 +53,18 @@ public final class RouteSettings: Hashable {
 
     /// 挂起直到本页被 `complete`（通常由 `pop(result:)` 触发）
     public func waitForResult() async -> [String: Any]? {
-        await withCheckedContinuation { cont in
+        if hasCompleted {
+            let boxed = pendingResult
+            pendingResult = nil
+            return boxed?.value
+        }
+        return await withCheckedContinuation { cont in
+            if hasCompleted {
+                let boxed = pendingResult
+                pendingResult = nil
+                cont.resume(returning: boxed ?? RouteResultBox(nil))
+                return
+            }
             if let old = continuation {
                 continuation = nil
                 old.resume(returning: RouteResultBox(nil))
@@ -56,9 +75,15 @@ public final class RouteSettings: Hashable {
 
     /// 结束等待；`result` 即对应 `await pushNamed` 的返回值
     public func complete(with result: [String: Any]? = nil) {
-        let cont = continuation
-        continuation = nil
-        cont?.resume(returning: RouteResultBox(result))
+        guard !hasCompleted else { return }
+        hasCompleted = true
+        let boxed = RouteResultBox(result)
+        if let cont = continuation {
+            continuation = nil
+            cont.resume(returning: boxed)
+        } else {
+            pendingResult = boxed
+        }
     }
 
     public nonisolated static func == (lhs: RouteSettings, rhs: RouteSettings) -> Bool {
@@ -128,17 +153,30 @@ public final class Navigator: ObservableObject {
     /// 为 true 时每次路由变化打印日志
     public static var isLog = false
 
-    @Published public var selectedTab: Int
+    /// 当前选中 Tab；切换时会把 `route` 同步为该 Tab 栈顶（`currentSettings`）
+    @Published public var selectedTab: Int {
+        didSet {
+            guard oldValue != selectedTab else { return }
+            routePre = route
+            route = currentSettings
+            dlog("selectedTab \(oldValue) → \(selectedTab), route: \(route?.name ?? "root")")
+        }
+    }
+
     /// 仅经 `pathBinding` / 命名 push·pop 变更
     @Published public private(set) var pathTabs: [NavigationPath]
 
     /// 与 path 等深的路由快照（与 NavigationPath 中为同一 RouteSettings 实例）
     private var routeTabs: [[RouteSettings]]
     private let containsRoute: RouteContains
+    /// 栈顶同名时是否拒绝 push（由业务注入；`nil` 表示不检查）
+    public var preventsDuplicate: ((String) -> Bool)?
+    /// 目标路由不存在时回退到此路由名；须已被 `containsRoute` 认可。
+    public var unknownRoute: String
 
-    /// 之前路由
+    /// 之前路由（最近一次跳转 / 切 Tab 前的 `route`）
     public private(set) var routePre: RouteSettings?
-    /// 当前路由；栈空则为 nil，表示 Tab 根
+    /// 当前「焦点」路由：最近一次跳转的 `to`，或切 Tab 后的栈顶；栈空则为 nil（Tab 根）
     public private(set) var route: RouteSettings?
 
     private var listeners: [(id: RouteListenerID, handler: RouteChangeHandler)] = []
@@ -147,14 +185,22 @@ public final class Navigator: ObservableObject {
     ///   - tabCount: Tab 数量（由业务传入）
     ///   - initialTab: 初始选中 Tab
     ///   - containsRoute: 路由名是否存在（由业务传入）
+    ///   - preventsDuplicate: 可选；`true` 且栈顶同名时跳过 push（返回 nil）
+    ///   - unknownRoute: 目标不存在时改跳此路由，并把原名写入 args[`NavigatorArgKey.intendedRoute`]（不可为空）
     public init(
         tabCount: Int,
         initialTab: Int = 0,
-        containsRoute: @escaping RouteContains
+        containsRoute: @escaping RouteContains,
+        preventsDuplicate: ((String) -> Bool)? = nil,
+        unknownRoute: String
     ) {
         precondition(tabCount > 0, "tabCount must be > 0")
+        precondition((0..<tabCount).contains(initialTab), "initialTab must be in 0..<tabCount")
+        precondition(!unknownRoute.isEmpty, "unknownRoute must not be empty")
         self.selectedTab = initialTab
         self.containsRoute = containsRoute
+        self.preventsDuplicate = preventsDuplicate
+        self.unknownRoute = unknownRoute
         pathTabs = Array(repeating: NavigationPath(), count: tabCount)
         routeTabs = Array(repeating: [], count: tabCount)
     }
@@ -240,9 +286,10 @@ public final class Navigator: ObservableObject {
     }
 
     // MARK: - 命名路由 API
-    // 所有 async 方法返回值 = 目标页 `pop(result:)` 传入的 result
+    // 返回值 = 目标页 `pop(result:)` / 侧滑（nil）
+    // 未打开页面（无 unknown 可回退、或防重跳过）时直接返回 nil
 
-    /// 压入新页并等待其 `pop(result:)`；返回值即该 result。
+    /// 压入新页并等待其 `pop(result:)`；返回值即该 result（侧滑为 nil）。
     @discardableResult
     public func pushNamed(_ name: String, args: [String: Any] = [:]) async -> [String: Any]? {
         guard let settings = appendRoute(name, args: args) else { return nil }
@@ -257,6 +304,8 @@ public final class Navigator: ObservableObject {
         args: [String: Any] = [:],
         result: [String: Any]? = nil
     ) async -> [String: Any]? {
+        // 先确认最终能落地（含 unknown 回退），避免非法名先毁栈
+        guard resolveTarget(name: name, args: args) != nil else { return nil }
         if canPop { pop(result: result) }
         return await pushNamed(name, args: args)
     }
@@ -271,6 +320,7 @@ public final class Navigator: ObservableObject {
         args: [String: Any] = [:],
         result: [String: Any]? = nil
     ) async -> [String: Any]? {
+        guard resolveTarget(name: name, args: args) != nil else { return nil }
         popUntil(predicate, result: result)
         return await pushNamed(name, args: args)
     }
@@ -321,14 +371,45 @@ public final class Navigator: ObservableObject {
 
     // MARK: - Private
 
-    @discardableResult
-    private func appendRoute(_ name: String, args: [String: Any]) -> RouteSettings? {
-        guard containsRoute(name) else {
-            dlog("⚠️ Route not found: \(name)")
+    /// 将请求解析为实际入栈的 name + args；无法落地时返回 nil。
+    private func resolveTarget(name: String, args: [String: Any]) -> (name: String, args: [String: Any])? {
+        if containsRoute(name) {
+            return (name, args)
+        }
+        let fallback = unknownRoute
+        guard containsRoute(fallback) else {
+            dlog("⚠️ Route not found (unknownRoute not registered): \(name) → \(fallback)")
             return nil
         }
+        var merged = args
+        merged[NavigatorArgKey.intendedRoute] = name
+        dlog("⚠️ Route not found: \(name) → \(fallback)")
+        return (fallback, merged)
+    }
 
-        let settings = RouteSettings(name: name, args: args.isEmpty ? nil : args)
+    @discardableResult
+    private func appendRoute(_ name: String, args: [String: Any]) -> RouteSettings? {
+        guard let target = resolveTarget(name: name, args: args) else { return nil }
+
+        if preventsDuplicate?(target.name) == true,
+           currentSettings?.name == target.name {
+            // unknown 回退：原目标不同则仍允许再 push，以便刷新参数展示
+            let sameIntended: Bool = {
+                guard target.name == unknownRoute else { return true }
+                let prev = currentSettings?.args?[NavigatorArgKey.intendedRoute] as? String
+                let next = target.args[NavigatorArgKey.intendedRoute] as? String
+                return prev == next
+            }()
+            if sameIntended {
+                dlog("preventDuplicates skip: \(target.name)")
+                return nil
+            }
+        }
+
+        let settings = RouteSettings(
+            name: target.name,
+            args: target.args.isEmpty ? nil : target.args
+        )
         let from = routeTabs[selectedTab].last
 
         var nextRoutes = routeTabs[selectedTab]
@@ -349,7 +430,15 @@ public final class Navigator: ObservableObject {
     /// 仅用于系统手势改 path：补齐 routeTabs，并以 nil complete（无业务 result）
     private func syncStacks(withPathCount pathCount: Int, tab: Int) {
         guard routeTabs.indices.contains(tab) else { return }
-        guard routeTabs[tab].count > pathCount else { return }
+        let routeCount = routeTabs[tab].count
+        #if DEBUG
+        if pathCount > routeCount {
+            assertionFailure(
+                "NavigationPath grew without named API (path=\(pathCount), routes=\(routeCount)). Use pushNamed / pathBinding pops only."
+            )
+        }
+        #endif
+        guard routeCount > pathCount else { return }
         let removed = Array(routeTabs[tab].suffix(from: pathCount))
         for settings in removed {
             settings.complete(with: nil)
@@ -384,7 +473,9 @@ extension View {
 }
 
 /// 子页级路由监听：栈内存活期间保持，避免 push 盖住后收不到返回事件。
+/// 依赖 `@EnvironmentObject` 中的 `Navigator`（与 `navigationBarCustom` 一致）。
 private struct RouteChangeListenerModifier: ViewModifier {
+    @EnvironmentObject private var navigator: Navigator
     @Environment(\.routeSettings) private var routeSettings
     let handler: RouteChangeHandler
     @State private var box = ListenerTokenBox()
@@ -398,10 +489,10 @@ private struct RouteChangeListenerModifier: ViewModifier {
     private func registerIfNeeded() {
         guard box.id == nil else { return }
         let mySettings = routeSettings
-        let id = NavigatorShort.addListener { from, to in
+        let id = navigator.addListener { from, to in
             handler(from, to)
             if let mySettings, from === mySettings {
-                NavigatorShort.removeListener(id)
+                navigator.removeListener(id)
                 box.id = nil
             }
         }
@@ -411,11 +502,11 @@ private struct RouteChangeListenerModifier: ViewModifier {
     private func unregisterIfRouteGone() {
         guard let id = box.id else { return }
         if let settings = routeSettings {
-            guard !NavigatorShort.shared.pageRoutes.contains(where: { $0 === settings }) else { return }
+            guard !navigator.pageRoutes.contains(where: { $0 === settings }) else { return }
         } else {
-            guard NavigatorShort.shared.pageRoutes.isEmpty else { return }
+            guard navigator.pageRoutes.isEmpty else { return }
         }
-        NavigatorShort.removeListener(id)
+        navigator.removeListener(id)
         box.id = nil
     }
 }

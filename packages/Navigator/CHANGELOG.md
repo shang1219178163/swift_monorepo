@@ -6,6 +6,21 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- `RouteSettings`：`complete` 早于 `waitForResult` 时缓冲结果，避免 await 挂死
+- 破坏性跳转（replacement / removeUntil）先校验路由存在再改栈
+- 切 Tab 时同步 `route` / `routeName` 为当前 Tab 栈顶
+- `onRouteChange` 改为依赖 `@EnvironmentObject Navigator`，不再绑死 Short 单例
+
+### Changed
+
+- 路由 API 不再 `throws`：未知路由回退到必填的 `unknownRoute` 并携带原 args + `intendedRoute`；unknown 未注册或防重跳过时返回 `nil`
+- `preventDuplicates` 下沉到 `Navigator.preventsDuplicate`（Short / 引擎共用）
+- `offAllNamed` 增加可选 `result:`；新增 `NavigatorShort.reset()`
+- `initialTab` 范围 precondition；DEBUG 下 path 非 API 增长会 assert
+- `setup(unknownRoute:)`：未知目标回退路由（`String`，不可为空）
+
 ## [1.0.0] - 2026-09-09
 
 ### Added

@@ -45,7 +45,8 @@ enum AppTab: Int, CaseIterable, Identifiable, Hashable {
             },
             titleProvider: { name in
                 AppRouter.page(for: name).title
-            }
+            },
+            unknownRoute: AppRouter.unknown
         )
         #if DEBUG
         NavigatorShort.isLog = true

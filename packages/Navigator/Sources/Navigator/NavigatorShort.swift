@@ -16,8 +16,6 @@ public final class NavigatorShort {
     private init() {}
 
     private static var engine: Navigator?
-    /// 是否禁止栈顶重复 push（由业务注入）
-    private static var preventsDuplicate: ((String) -> Bool)?
     /// 导航栏标题回落（由业务注入）
     public private(set) static var titleProvider: RouteTitleProvider?
 
@@ -29,34 +27,47 @@ public final class NavigatorShort {
         return engine
     }
 
-    /// 外部注入引擎配置。引擎只创建一次（避免 Preview 二次 setup 与 `@EnvironmentObject` 脱节）；策略闭包可覆盖。
+    /// 清空引擎（测试 / Preview 重建）。之后须重新 `setup`。
+    public static func reset() {
+        engine = nil
+        titleProvider = nil
+    }
+
+    /// 外部注入引擎配置。
+    /// - Parameters:
+    ///   - unknownRoute: 目标路由不存在时回退到此路径（非空，且须在 `containsRoute` 内）；原目标名写入 args[`NavigatorArgKey.intendedRoute`]
+    /// - 首次创建引擎；若已存在且 `tabCount` 不同则重建；策略闭包 / unknown 始终覆盖。
     public static func setup(
         tabCount: Int,
         initialTab: Int = 0,
         containsRoute: @escaping RouteContains,
         preventsDuplicate: ((String) -> Bool)? = nil,
-        titleProvider: RouteTitleProvider? = nil
+        titleProvider: RouteTitleProvider? = nil,
+        unknownRoute: String
     ) {
+        precondition(!unknownRoute.isEmpty, "unknownRoute must not be empty")
+        if let existing = engine, existing.pathTabs.count != tabCount {
+            engine = nil
+        }
         if engine == nil {
             engine = Navigator(
                 tabCount: tabCount,
                 initialTab: initialTab,
-                containsRoute: containsRoute
+                containsRoute: containsRoute,
+                preventsDuplicate: preventsDuplicate,
+                unknownRoute: unknownRoute
             )
+        } else {
+            engine?.preventsDuplicate = preventsDuplicate
+            engine?.unknownRoute = unknownRoute
         }
-        self.preventsDuplicate = preventsDuplicate
         self.titleProvider = titleProvider
     }
 
     /// GetX `toNamed` → `pushNamed`；返回值 = 目标页 `pop(result:)`
     @discardableResult
     public static func toNamed(_ name: String, args: [String: Any] = [:]) async -> [String: Any]? {
-        if preventsDuplicate?(name) == true,
-           shared.currentSettings?.name == name {
-            dlog("preventDuplicates skip: \(name)")
-            return nil
-        }
-        return await shared.pushNamed(name, args: args)
+        await shared.pushNamed(name, args: args)
     }
 
     /// GetX `offNamed` → `pushReplacementNamed`
@@ -71,8 +82,12 @@ public final class NavigatorShort {
 
     /// GetX `offAllNamed`：清空当前 Tab 栈后再 push
     @discardableResult
-    public static func offAllNamed(_ name: String, args: [String: Any] = [:]) async -> [String: Any]? {
-        await shared.pushNamedAndRemoveUntil(name, { _ in false }, args: args)
+    public static func offAllNamed(
+        _ name: String,
+        args: [String: Any] = [:],
+        result: [String: Any]? = nil
+    ) async -> [String: Any]? {
+        await shared.pushNamedAndRemoveUntil(name, { _ in false }, args: args, result: result)
     }
 
     /// GetX `until` → `popUntil`

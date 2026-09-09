@@ -39,6 +39,26 @@
       "target": "JsonCodableClient",
       "configuration": "release",
       "preLaunchTask": "swift: Build Release JsonCodableClient (packages/JsonCodable)"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:swift_monorepo}/third_party/SFSafeSymbols/SymbolsGenerator",
+      "name": "Debug SymbolsGenerator (third_party/SFSafeSymbols/SymbolsGenerator)",
+      "target": "SymbolsGenerator",
+      "configuration": "debug",
+      "preLaunchTask": "swift: Build Debug SymbolsGenerator (third_party/SFSafeSymbols/SymbolsGenerator)"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:swift_monorepo}/third_party/SFSafeSymbols/SymbolsGenerator",
+      "name": "Release SymbolsGenerator (third_party/SFSafeSymbols/SymbolsGenerator)",
+      "target": "SymbolsGenerator",
+      "configuration": "release",
+      "preLaunchTask": "swift: Build Release SymbolsGenerator (third_party/SFSafeSymbols/SymbolsGenerator)"
     }
   ]
 }
