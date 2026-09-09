@@ -1,0 +1,32 @@
+{
+  "id": 1,
+  "username": "Alex",
+  "avatar_url": "https://example.com/a.png",
+  "age": 20,
+  "score": 98.5,
+  "rating": 4.5,
+  "active": true,
+  "created_at": 1725772800,
+  "tags": ["swift", "ios", "macro"],
+  "levels": [1, 2, 3],
+  "ratios": [0.1, 0.25, 0.9],
+  "profile": {
+    "bio": "iOS developer",
+    "is_verified": true,
+    "follower_count": 128,
+    "address": {
+      "city_name": "Shanghai",
+      "zip_code": "200000",
+      "latitude": 31.2304,
+      "longitude": 121.4737
+    }
+  },
+  "favorite_tags": [
+    { "id": 10, "tag_name": "Swift" },
+    { "id": 11, "name": "Macro" }
+  ],
+  "extra": {
+    "theme": "dark",
+    "lang": "zh-CN"
+  }
+}

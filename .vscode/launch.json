@@ -1,0 +1,44 @@
+{
+  "configurations": [
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:swift_monorepo}",
+      "name": "Debug JsonCodableClient",
+      "target": "JsonCodableClient",
+      "configuration": "debug",
+      "preLaunchTask": "swift: Build Debug JsonCodableClient"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:swift_monorepo}",
+      "name": "Release JsonCodableClient",
+      "target": "JsonCodableClient",
+      "configuration": "release",
+      "preLaunchTask": "swift: Build Release JsonCodableClient"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:swift_monorepo}/packages/JsonCodable",
+      "name": "Debug JsonCodableClient (packages/JsonCodable)",
+      "target": "JsonCodableClient",
+      "configuration": "debug",
+      "preLaunchTask": "swift: Build Debug JsonCodableClient (packages/JsonCodable)"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:swift_monorepo}/packages/JsonCodable",
+      "name": "Release JsonCodableClient (packages/JsonCodable)",
+      "target": "JsonCodableClient",
+      "configuration": "release",
+      "preLaunchTask": "swift: Build Release JsonCodableClient (packages/JsonCodable)"
+    }
+  ]
+}
