@@ -195,7 +195,7 @@ public final class Navigator: ObservableObject {
         for item in snapshot {
             item.handler(from, to)
         }
-        NavigatorLog.debug("route: \(from?.name ?? "root") → \(to?.name ?? "root"), stack: \(pageRouteNames)")
+        dlog("route: \(from?.name ?? "root") → \(to?.name ?? "root"), stack: \(pageRouteNames)")
     }
 
     public func pathBinding(for tab: Int) -> Binding<NavigationPath> {
@@ -324,7 +324,7 @@ public final class Navigator: ObservableObject {
     @discardableResult
     private func appendRoute(_ name: String, args: [String: Any]) -> RouteSettings? {
         guard containsRoute(name) else {
-            NavigatorLog.debug("⚠️ Route not found: \(name)")
+            dlog("⚠️ Route not found: \(name)")
             return nil
         }
 
@@ -360,7 +360,7 @@ public final class Navigator: ObservableObject {
 
     private func log(prefix: String = "") {
         let depths = pathTabs.enumerated().map { "\($0.offset)_\($0.element.count)" }
-        NavigatorLog.debug("\(prefix) tab:\(selectedTab) path: \(depths.joined(separator: ",")), routes: \(routes)")
+        dlog("\(prefix) tab:\(selectedTab) path: \(depths.joined(separator: ",")), routes: \(routes)")
     }
 }
 

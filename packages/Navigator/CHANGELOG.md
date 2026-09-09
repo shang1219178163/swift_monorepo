@@ -13,4 +13,4 @@
 - `Navigator` 多 Tab 具名路由引擎（`pushNamed` / `pop` / 监听器）
 - `NavigatorShort` GetX 风格门面与 `setup` 注入
 - `navigationBarCustom`（iOS / Mac Catalyst）
-- `NavigatorLog` 调试日志（`Navigator.isLog` 开关）
+- 包内 `dlog` 调试日志（`Navigator.isLog` 开关；外部不可见）

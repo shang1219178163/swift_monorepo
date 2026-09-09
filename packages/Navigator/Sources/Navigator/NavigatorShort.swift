@@ -53,7 +53,7 @@ public final class NavigatorShort {
     public static func toNamed(_ name: String, args: [String: Any] = [:]) async -> [String: Any]? {
         if preventsDuplicate?(name) == true,
            shared.currentSettings?.name == name {
-            NavigatorLog.debug("preventDuplicates skip: \(name)")
+            dlog("preventDuplicates skip: \(name)")
             return nil
         }
         return await shared.pushNamed(name, args: args)
