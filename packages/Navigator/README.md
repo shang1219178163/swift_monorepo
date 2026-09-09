@@ -1,5 +1,7 @@
 # Navigator
 
+**当前版本：1.0.0**（详见 [CHANGELOG.md](CHANGELOG.md)）
+
 SwiftUI 具名路由引擎（无业务路由表）：多 Tab `NavigationPath`、async `pushNamed` / `pop(result:)`、GetX 风格门面。
 
 本包位于 [swift_monorepo](https://github.com/shang1219178163/swift_monorepo) monorepo 的 `packages/Navigator`。

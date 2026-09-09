@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-09
+
 ### Fixed
 
 - `@Codable` 对 `public` / `package` 类型生成同级访问修饰的 `init(from:)` / `encode(to:)`
@@ -15,19 +17,13 @@
 
 ### Changed
 
-- `dlog` 复用静态 `DateFormatter`
-- README：澄清 `toJson` 返回字典、`defaultValue` 不覆盖 JSON `null`、`@CodingKey` 需配合 `@Codable`
-
-## [1.0.0] - 2026-09-09
-
-### Changed
-
 - JSON 辅助 API 重命名并调整语义：
   - `fromData(_:coder:)`：`Data` → 模型
   - `fromJson(_:coder:)`：字典 → 模型
-  - `toJson(coder:)`：模型 → 字典
+  - `toJson(coder:)`：模型 → 字典（非 JSON 字符串；数值等可能为 `NSNumber` 桥接）
 - 配置参数由闭包 `configure` 改为可选 `coder: JSONDecoder?` / `JSONEncoder?`
 - 移除旧版 `encode` / `decode` / `toDict` 以及 `JsonCodableError.invalidUTF8`
+- `dlog` 复用静态 `DateFormatter`；README 澄清 `defaultValue` 不覆盖 JSON `null`、`@CodingKey` 需配合 `@Codable`
 
 ### Added
 

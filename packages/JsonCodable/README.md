@@ -1,5 +1,7 @@
 # JsonCodable
 
+**当前版本：1.0.0**（详见 [CHANGELOG.md](CHANGELOG.md)）
+
 Swift 宏驱动的 `Codable` 增强库：用 `@Codable` / `@CodingKey` 生成编解码实现，支持 JSON key 别名、缺省默认值，并提供 `Data` / 字典 ⇄ 模型互转。
 
 本包位于 [swift_monorepo](https://github.com/shang1219178163/swift_monorepo) monorepo 的 `packages/JsonCodable`。
