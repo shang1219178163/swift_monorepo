@@ -1,5 +1,7 @@
 # swift_monorepo
 
+**当前版本：1.0.0**（详见 [CHANGELOG.md](CHANGELOG.md)）
+
 Swift 宏与通用 SwiftUI 组件的 monorepo。每个可发布库放在 `packages/<Name>/`，自带独立 `Package.swift`；仓库根目录的伞形 `Package.swift` 聚合产品，供远程 SPM 依赖与统一 `swift test`。
 
 ```text
@@ -26,7 +28,7 @@ swift_monorepo/
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/shang1219178163/swift_monorepo.git", from: "0.1.0")
+    .package(url: "https://github.com/shang1219178163/swift_monorepo.git", from: "1.0.0")
 ]
 ```
 

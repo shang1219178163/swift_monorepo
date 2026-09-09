@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-09
+
 ### Changed
 
 - JSON 辅助 API 重命名并调整语义：

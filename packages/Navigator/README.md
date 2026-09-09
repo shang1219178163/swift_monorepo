@@ -17,7 +17,7 @@ SwiftUI 具名路由引擎（无业务路由表）：多 Tab `NavigationPath`、
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/shang1219178163/swift_monorepo.git", from: "0.1.0")
+    .package(url: "https://github.com/shang1219178163/swift_monorepo.git", from: "1.0.0")
 ]
 
 .target(

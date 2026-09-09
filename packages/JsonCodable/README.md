@@ -22,7 +22,7 @@ Swift 宏驱动的 `Codable` 增强库：用 `@Codable` / `@CodingKey` 生成编
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/shang1219178163/swift_monorepo.git", from: "0.1.0")
+    .package(url: "https://github.com/shang1219178163/swift_monorepo.git", from: "1.0.0")
 ]
 
 .target(
