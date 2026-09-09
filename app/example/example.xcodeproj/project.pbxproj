@@ -210,7 +210,7 @@
 			packageReferences = (
 				147AAFAE305115E70007D45C /* XCLocalSwiftPackageReference "../../packages/JsonCodable" */,
 				14FC04A230514B6300AC220C /* XCLocalSwiftPackageReference "../../packages/Navigator" */,
-				147AAFB6305115E70007D45C /* XCRemoteSwiftPackageReference "SFSafeSymbols" */,
+				147AAFB6305115E70007D45C /* XCLocalSwiftPackageReference "../../third_party/SFSafeSymbols" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 147AAF79305112C90007D45C /* Products */;
@@ -585,18 +585,11 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../packages/Navigator;
 		};
-/* End XCLocalSwiftPackageReference section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		147AAFB6305115E70007D45C /* XCRemoteSwiftPackageReference "SFSafeSymbols" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/SFSafeSymbols/SFSafeSymbols.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 6.0.0;
-			};
+		147AAFB6305115E70007D45C /* XCLocalSwiftPackageReference "../../third_party/SFSafeSymbols" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../third_party/SFSafeSymbols;
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		147AAFB0305115E70007D45C /* JsonCodable */ = {
@@ -611,7 +604,7 @@
 		};
 		147AAFB5305115E70007D45C /* SFSafeSymbols */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 147AAFB6305115E70007D45C /* XCRemoteSwiftPackageReference "SFSafeSymbols" */;
+			package = 147AAFB6305115E70007D45C /* XCLocalSwiftPackageReference "../../third_party/SFSafeSymbols" */;
 			productName = SFSafeSymbols;
 		};
 /* End XCSwiftPackageProductDependency section */
