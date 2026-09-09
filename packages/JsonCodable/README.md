@@ -92,7 +92,7 @@ let jsonObject = try user.toJson()
 | --- | --- |
 | `key` | 编码使用的规范 key，也是解码时优先匹配的 key |
 | `aliases` | 规范 key 不存在时，按顺序尝试的备用解码 key |
-| `defaultValue` | 所有 key 都缺失时使用的默认值；省略则必填（可选类型可为 `nil`） |
+| `defaultValue` | 所有 key 都**缺失**时使用的默认值（JSON `null` 仍走正常解码，不会回落到默认值）；省略则必填（可选类型可为 `nil`） |
 
 ### JSON 辅助 API
 
@@ -100,7 +100,7 @@ let jsonObject = try user.toJson()
 | --- | --- | --- |
 | `fromData(_:coder:)` | `(Data) throws -> Self` | JSON `Data` → 模型 |
 | `fromJson(_:coder:)` | `([String: Any]) throws -> Self` | 字典 → 模型（内部转 `Data` 后走 `fromData`） |
-| `toJson(coder:)` | `throws -> [String: Any]` | 模型 → 字典；根节点非对象抛 `rootNotDictionary` |
+| `toJson(coder:)` | `throws -> [String: Any]` | 模型 → 字典（非 JSON 字符串；数值等可能为 `NSNumber` 桥接）；根节点非对象抛 `rootNotDictionary` |
 
 `coder` 为可选参数；传入 `nil`（默认）时使用 `JSONDecoder()` / `JSONEncoder()`。
 
@@ -113,6 +113,8 @@ let encoder = JSONEncoder()
 encoder.dateEncodingStrategy = .secondsSince1970
 let dict = try user.toJson(coder: encoder)
 ```
+
+> `@CodingKey` 需与 `@Codable` 一起使用，单独标注不会生成任何代码。
 
 > 已在 `@CodingKey` 中写明 snake_case 等 key 时，不要再设 `keyDecodingStrategy = .convertFromSnakeCase`，否则键名会被二次转换导致解码失败。
 
@@ -141,7 +143,7 @@ VS Code / Cursor：使用根目录 `.vscode/launch.json` 中的 `Debug/Release J
 
 ### iOS 示例 App
 
-仓库 `app/example` 通过本地 SPM 依赖本包，演示编码（`fromData`）与解码（`toJson`）。用 Xcode 打开 `app/example/example.xcodeproj` 运行即可。修改 `packages/JsonCodable` 后需重新编译 `example` 才会带上最新代码。
+仓库 `app/example` 通过本地 SPM 依赖本包，演示 `fromData`（Data→模型）与 `toJson`（模型→字典）。用 Xcode 打开 `app/example/example.xcodeproj` 运行即可。修改 `packages/JsonCodable` 后需重新编译 `example` 才会带上最新代码。
 
 ## 开发
 

@@ -21,14 +21,15 @@ public struct CodableMacro: ExtensionMacro {
             return []
         }
 
-        let properties = try parseProperties(from: declaration, context: context)
+        let properties = parseProperties(from: declaration, context: context)
 
         guard validate(properties, context: context) else {
             return []
         }
 
-        let decode = makeDecode(properties: properties)
-        let encode = makeEncode(properties: properties)
+        let access = accessModifierPrefix(from: declaration)
+        let decode = makeDecode(properties: properties, access: access)
+        let encode = makeEncode(properties: properties, access: access)
 
         let extensionDecl = try ExtensionDeclSyntax(
             """
@@ -87,10 +88,26 @@ private func unwrapOptional(_ type: String) -> (isOptional: Bool, wrapped: Strin
 // MARK: - Parse
 
 private extension CodableMacro {
+    /// `public` / `package` 类型需生成同级可见的 Codable 见证方法。
+    static func accessModifierPrefix(from declaration: some DeclGroupSyntax) -> String {
+        guard let structDecl = declaration.as(StructDeclSyntax.self) else { return "" }
+        for modifier in structDecl.modifiers {
+            switch modifier.name.text {
+            case "public", "open":
+                return "public "
+            case "package":
+                return "package "
+            default:
+                continue
+            }
+        }
+        return ""
+    }
+
     static func parseProperties(
         from declaration: some DeclGroupSyntax,
         context: some MacroExpansionContext
-    ) throws -> [CodableProperty] {
+    ) -> [CodableProperty] {
         var result: [CodableProperty] = []
 
         for member in declaration.memberBlock.members {
@@ -104,11 +121,22 @@ private extension CodableMacro {
                 continue
             }
 
+            if variable.bindings.count > 1 {
+                context.diagnose(
+                    Diagnostic(
+                        node: Syntax(variable),
+                        message: CodingKeyDiagnostic.multipleBindingsNotSupported
+                    )
+                )
+                continue
+            }
+
             guard variable.bindings.count == 1, let binding = variable.bindings.first else {
                 continue
             }
 
-            if binding.accessorBlock != nil {
+            // 计算属性（get/set）跳过；仅 willSet/didSet 的仍是存储属性，需参与编解码。
+            if let accessorBlock = binding.accessorBlock, isComputedProperty(accessorBlock) {
                 continue
             }
 
@@ -129,7 +157,7 @@ private extension CodableMacro {
             }
 
             let propertyType = typeAnnotation.type.trimmedDescription
-            let codingKey = try parseCodingKey(from: variable, propertyName: propertyName, context: context)
+            let codingKey = parseCodingKey(from: variable, propertyName: propertyName, context: context)
 
             result.append(
                 CodableProperty(
@@ -146,11 +174,29 @@ private extension CodableMacro {
         return result
     }
 
+    /// `get`/`set`（含只读 `{ get }` / `=>`）视为计算属性；仅 `willSet`/`didSet` 则否。
+    static func isComputedProperty(_ accessorBlock: AccessorBlockSyntax) -> Bool {
+        switch accessorBlock.accessors {
+        case .getter:
+            return true
+        case .accessors(let list):
+            for accessor in list {
+                switch accessor.accessorSpecifier.text {
+                case "get", "set":
+                    return true
+                default:
+                    continue
+                }
+            }
+            return false
+        }
+    }
+
     static func parseCodingKey(
         from property: VariableDeclSyntax,
         propertyName: String,
         context: some MacroExpansionContext
-    ) throws -> (key: String, aliases: [String], defaultValueExpression: String?) {
+    ) -> (key: String, aliases: [String], defaultValueExpression: String?) {
         guard let attribute = property.attributes
             .compactMap({ $0.as(AttributeSyntax.self) })
             .first(where: {
@@ -173,7 +219,7 @@ private extension CodableMacro {
             return (key: propertyName, aliases: [], defaultValueExpression: nil)
         }
 
-        let key = try parseStringLiteral(first.expression)
+        let key = parseStringLiteral(first.expression, context: context) ?? propertyName
 
         var aliases: [String] = []
         var defaultValueExpression: String?
@@ -192,7 +238,9 @@ private extension CodableMacro {
                 }
 
                 for element in array.elements {
-                    aliases.append(try parseStringLiteral(element.expression))
+                    if let alias = parseStringLiteral(element.expression, context: context) {
+                        aliases.append(alias)
+                    }
                 }
 
             case "defaultValue":
@@ -213,12 +261,21 @@ private extension CodableMacro {
         return (key: key, aliases: aliases, defaultValueExpression: defaultValueExpression)
     }
 
-    static func parseStringLiteral(_ expression: ExprSyntax) throws -> String {
+    static func parseStringLiteral(
+        _ expression: ExprSyntax,
+        context: some MacroExpansionContext
+    ) -> String? {
         guard let literal = expression.as(StringLiteralExprSyntax.self),
               literal.segments.count == 1,
               let segment = literal.segments.first?.as(StringSegmentSyntax.self)
         else {
-            throw CodingKeyMacroError.stringLiteralRequired
+            context.diagnose(
+                Diagnostic(
+                    node: Syntax(expression),
+                    message: CodingKeyDiagnostic.stringLiteralRequired
+                )
+            )
+            return nil
         }
         return segment.content.text
     }
@@ -263,7 +320,7 @@ private extension CodableMacro {
 // MARK: - Codegen
 
 private extension CodableMacro {
-    static func makeDecode(properties: [CodableProperty]) -> String {
+    static func makeDecode(properties: [CodableProperty], access: String) -> String {
         let statements = properties.map(makeDecodeStatement(property:))
         let body = ([
             "let container = try decoder.container(keyedBy: AnyCodingKey.self)"
@@ -272,13 +329,13 @@ private extension CodableMacro {
             .joined(separator: "\n")
 
         return """
-            init(from decoder: Decoder) throws {
+            \(access)init(from decoder: Decoder) throws {
         \(body)
             }
         """
     }
 
-    static func makeEncode(properties: [CodableProperty]) -> String {
+    static func makeEncode(properties: [CodableProperty], access: String) -> String {
         let encodeStatements = properties.map { property -> String in
             let method = property.isOptional ? "encodeIfPresent" : "encode"
             return """
@@ -296,7 +353,7 @@ private extension CodableMacro {
             .joined(separator: "\n")
 
         return """
-            func encode(to encoder: Encoder) throws {
+            \(access)func encode(to encoder: Encoder) throws {
         \(body)
             }
         """
@@ -398,6 +455,7 @@ private extension CodableMacro {
             .replacingOccurrences(of: "\"", with: "\\\"")
             .replacingOccurrences(of: "\n", with: "\\n")
             .replacingOccurrences(of: "\r", with: "\\r")
+            .replacingOccurrences(of: "\t", with: "\\t")
     }
 
     static func indent(_ text: String, by spaces: Int) -> String {
@@ -411,23 +469,14 @@ private extension CodableMacro {
 
 // MARK: - Diagnostics
 
-private enum CodingKeyMacroError: Error, CustomStringConvertible {
-    case stringLiteralRequired
-
-    var description: String {
-        switch self {
-        case .stringLiteralRequired:
-            return "CodingKey requires a string literal."
-        }
-    }
-}
-
 private enum CodingKeyDiagnostic: DiagnosticMessage {
     case onlyStructSupported
     case propertyRequiresType(String)
     case invalidCodingKey(String)
     case invalidAliases(String)
     case duplicateKey(String)
+    case multipleBindingsNotSupported
+    case stringLiteralRequired
 
     var severity: DiagnosticSeverity { .error }
 
@@ -443,6 +492,10 @@ private enum CodingKeyDiagnostic: DiagnosticMessage {
             return "Invalid aliases on '\(name)'."
         case .duplicateKey(let key):
             return "Duplicate CodingKey '\(key)'."
+        case .multipleBindingsNotSupported:
+            return "@Codable does not support multiple bindings in one declaration; split into separate properties."
+        case .stringLiteralRequired:
+            return "@CodingKey requires a string literal."
         }
     }
 
@@ -458,6 +511,10 @@ private enum CodingKeyDiagnostic: DiagnosticMessage {
             return MessageID(domain: "JsonCodableMacros", id: "invalidAliases")
         case .duplicateKey:
             return MessageID(domain: "JsonCodableMacros", id: "duplicateKey")
+        case .multipleBindingsNotSupported:
+            return MessageID(domain: "JsonCodableMacros", id: "multipleBindingsNotSupported")
+        case .stringLiteralRequired:
+            return MessageID(domain: "JsonCodableMacros", id: "stringLiteralRequired")
         }
     }
 }

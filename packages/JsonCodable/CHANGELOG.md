@@ -6,6 +6,18 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- `@Codable` 对 `public` / `package` 类型生成同级访问修饰的 `init(from:)` / `encode(to:)`
+- 带 `willSet` / `didSet` 的存储属性纳入编解码；多绑定属性声明给出诊断
+- `@CodingKey` 非字面量 key 改为定位诊断（不再 throw）
+- 测试改用 `fromJson` / `toJson` / `fromData`，并覆盖 `rootNotDictionary`、public 展开与属性观察器
+
+### Changed
+
+- `dlog` 复用静态 `DateFormatter`
+- README：澄清 `toJson` 返回字典、`defaultValue` 不覆盖 JSON `null`、`@CodingKey` 需配合 `@Codable`
+
 ## [1.0.0] - 2026-09-09
 
 ### Changed

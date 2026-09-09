@@ -12,9 +12,15 @@ package func dlog(
     let message = items.map { String(describing: $0) }.joined(separator: " ")
     let fileName = file.split(separator: "/").last.map(String.init) ?? file
     let className = fileName.replacingOccurrences(of: ".swift", with: "")
-    let formatter = DateFormatter()
-    formatter.locale = Locale(identifier: "zh_CN")
-    formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
-    let timestamp = formatter.string(from: Date())
+    let timestamp = SelfDLog.formatter.string(from: Date())
     print("[\(timestamp) \(className).\(function) Line:\(line)]: \(message)")
+}
+
+private enum SelfDLog {
+    static let formatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
+        return formatter
+    }()
 }

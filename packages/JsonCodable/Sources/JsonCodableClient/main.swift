@@ -70,16 +70,14 @@ struct User {
 do {
   let jsonURL = Bundle.module.url(forResource: "user", withExtension: "json")!
   let data = try Data(contentsOf: jsonURL)
-  // let object = try JSONSerialization.jsonObject(with: data)
-  // guard let dict = object as? [String: Any] else {
-  //   throw JsonCodableError.rootNotDictionary
-  // }
-  // let user = try User.fromJson(dict)
   let user = try User.fromData(data)
-  dlog("decoded:", user)
+  dlog("fromData:", user)
 
   let dictNew = try user.toJson()
-  dlog("encoded dictNew:", dictNew)
+  dlog("toJson:", dictNew)
+
+  let again = try User.fromJson(dictNew)
+  dlog("fromJson:", again.name)
 } catch {
   dlog("error:", error)
   exit(1)

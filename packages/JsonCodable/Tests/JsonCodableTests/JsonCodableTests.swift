@@ -25,9 +25,23 @@ private struct RoundTripUser {
     let age: Int
 }
 
+/// 编码结果为 JSON 数组根节点，用于触发 `rootNotDictionary`。
+private struct JSONArrayRoot: Encodable {
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.unkeyedContainer()
+        try container.encode(1)
+    }
+}
+
+private func jsonInt(_ value: Any?) -> Int? {
+    if let int = value as? Int { return int }
+    if let number = value as? NSNumber { return number.intValue }
+    return nil
+}
+
 final class JsonCodableTests: XCTestCase {
-    func testDecodeAliasAndDefaultValue() throws {
-        let user = try RoundTripUser.encode([
+    func testFromJsonAliasAndDefaultValue() throws {
+        let user = try RoundTripUser.fromJson([
             "id": 1,
             "username": "Alex",
         ])
@@ -36,16 +50,28 @@ final class JsonCodableTests: XCTestCase {
         XCTAssertEqual(user.age, 0)
     }
 
-    func testEncodeRoundTrip() throws {
+    func testToJsonRoundTrip() throws {
         let user = RoundTripUser(id: 2, name: "Bob", age: 18)
-        let dict = try user.decode()
-        let encoded = try RoundTripUser.encode(dict)
+        let dict = try user.toJson()
+        let encoded = try RoundTripUser.fromJson(dict)
         XCTAssertEqual(encoded.id, 2)
         XCTAssertEqual(encoded.name, "Bob")
         XCTAssertEqual(encoded.age, 18)
-        XCTAssertEqual(dict["id"] as? Int, 2)
+        XCTAssertEqual(jsonInt(dict["id"]), 2)
         XCTAssertEqual(dict["user_name"] as? String, "Bob")
-        XCTAssertEqual(dict["age"] as? Int, 18)
+        XCTAssertEqual(jsonInt(dict["age"]), 18)
+    }
+
+    func testFromDataAndRootNotDictionary() throws {
+        let data = Data(#"{"id":3,"user_name":"Cara","age":21}"#.utf8)
+        let user = try RoundTripUser.fromData(data)
+        XCTAssertEqual(user.id, 3)
+        XCTAssertEqual(user.name, "Cara")
+        XCTAssertEqual(user.age, 21)
+
+        XCTAssertThrowsError(try JSONArrayRoot().toJson()) { error in
+            XCTAssertEqual(error as? JsonCodableError, .rootNotDictionary)
+        }
     }
 
     func testBasicCodingKeyExpansion() throws {
@@ -220,6 +246,88 @@ final class JsonCodableTests: XCTestCase {
                     try container.encode(
                         age,
                         forKey: AnyCodingKey(stringValue: "age")
+                    )
+                }
+            }
+            """,
+            macros: testMacros
+        )
+        #else
+        throw XCTSkip("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testPublicAccessExpansion() throws {
+        #if canImport(JsonCodableMacros)
+        assertMacroExpansion(
+            """
+            @Codable
+            public struct User {
+                public let id: Int
+            }
+            """,
+            expandedSource: """
+            public struct User {
+                public let id: Int
+            }
+
+            extension User: Codable {
+                public init(from decoder: Decoder) throws {
+                    let container = try decoder.container(keyedBy: AnyCodingKey.self)
+                    self.id = try container.decode(
+                        Int.self,
+                        forKey: AnyCodingKey(stringValue: "id")
+                    )
+                }
+
+                public func encode(to encoder: Encoder) throws {
+                    var container = encoder.container(keyedBy: AnyCodingKey.self)
+                    try container.encode(
+                        id,
+                        forKey: AnyCodingKey(stringValue: "id")
+                    )
+                }
+            }
+            """,
+            macros: testMacros
+        )
+        #else
+        throw XCTSkip("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testPropertyObserversIncludedInExpansion() throws {
+        #if canImport(JsonCodableMacros)
+        assertMacroExpansion(
+            """
+            @Codable
+            struct Counter {
+                var count: Int {
+                    didSet {}
+                }
+            }
+            """,
+            expandedSource: """
+            struct Counter {
+                var count: Int {
+                    didSet {}
+                }
+            }
+
+            extension Counter: Codable {
+                init(from decoder: Decoder) throws {
+                    let container = try decoder.container(keyedBy: AnyCodingKey.self)
+                    self.count = try container.decode(
+                        Int.self,
+                        forKey: AnyCodingKey(stringValue: "count")
+                    )
+                }
+
+                func encode(to encoder: Encoder) throws {
+                    var container = encoder.container(keyedBy: AnyCodingKey.self)
+                    try container.encode(
+                        count,
+                        forKey: AnyCodingKey(stringValue: "count")
                     )
                 }
             }
