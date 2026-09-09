@@ -2,7 +2,7 @@
 
 Swift 宏驱动的 `Codable` 增强库：用 `@Codable` / `@CodingKey` 生成编解码实现，支持 JSON key 别名、缺省默认值，并提供 `Data` / 字典 ⇄ 模型互转。
 
-本包位于 [swift_macro](https://github.com/shang1219178163/swift_macro) monorepo 的 `packages/JsonCodable`。
+本包位于 [swift_monorepo](https://github.com/shang1219178163/swift_monorepo) monorepo 的 `packages/JsonCodable`。
 
 ## 特性
 
@@ -22,7 +22,7 @@ Swift 宏驱动的 `Codable` 增强库：用 `@Codable` / `@CodingKey` 生成编
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/shang1219178163/swift_macro.git", from: "0.1.0")
+    .package(url: "https://github.com/shang1219178163/swift_monorepo.git", from: "0.1.0")
 ]
 
 .target(
@@ -39,7 +39,7 @@ Xcode：`File` → `Add Package Dependencies…`，填入仓库 URL，选择产�
 
 ```swift
 dependencies: [
-    .package(path: "../swift_macro/packages/JsonCodable")
+    .package(path: "../swift_monorepo/packages/JsonCodable")
 ]
 
 .target(

@@ -2,7 +2,7 @@
 
 SwiftUI 具名路由引擎（无业务路由表）：多 Tab `NavigationPath`、async `pushNamed` / `pop(result:)`、GetX 风格门面。
 
-本包位于 [swift_macro](https://github.com/shang1219178163/swift_macro) monorepo 的 `packages/Navigator`。
+本包位于 [swift_monorepo](https://github.com/shang1219178163/swift_monorepo) monorepo 的 `packages/Navigator`。
 
 从 `SwiftUITemplet/Router` 抽出与业务无关的部分：`Navigator`、`NavigatorShort`、`NavigationBarModifier`。业务侧自行维护路由表（如原 `AppRouter` / `AppTab`）并在启动时 `setup`。
 
@@ -17,7 +17,7 @@ SwiftUI 具名路由引擎（无业务路由表）：多 Tab `NavigationPath`、
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/shang1219178163/swift_macro.git", from: "0.1.0")
+    .package(url: "https://github.com/shang1219178163/swift_monorepo.git", from: "0.1.0")
 ]
 
 .target(
@@ -31,7 +31,7 @@ dependencies: [
 ### 本地路径
 
 ```swift
-.package(path: "../swift_macro/packages/Navigator")
+.package(path: "../swift_monorepo/packages/Navigator")
 ```
 
 ## 用法

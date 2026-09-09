@@ -1,15 +1,17 @@
-# swift_macro
+# swift_monorepo
 
 Swift 宏与通用 SwiftUI 组件的 monorepo。每个可发布库放在 `packages/<Name>/`，自带独立 `Package.swift`；仓库根目录的伞形 `Package.swift` 聚合产品，供远程 SPM 依赖与统一 `swift test`。
 
 ```text
-swift_macro/
+swift_monorepo/
 ├── Package.swift                 # 伞形包（对外产品入口）
 ├── packages/
 │   ├── JsonCodable/              # @Codable / @CodingKey 与 JSON 辅助 API
 │   └── Navigator/                # SwiftUI 具名路由引擎（无业务表）
+├── third_party/
+│   └── SFSafeSymbols/            # 示例 App 本地 vendored（GitHub 拉取不稳时用）
 ├── app/
-│   └── example/                  # iOS 示例（本地依赖 JsonCodable）
+│   └── example/                  # iOS 示例（JsonCodable / Navigator / SFSafeSymbols）
 └── README.md
 ```
 
@@ -24,7 +26,7 @@ swift_macro/
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/shang1219178163/swift_macro.git", from: "0.1.0")
+    .package(url: "https://github.com/shang1219178163/swift_monorepo.git", from: "0.1.0")
 ]
 ```
 
@@ -55,8 +57,8 @@ swift test
 本地路径依赖：
 
 ```swift
-.package(path: "../swift_macro/packages/JsonCodable")
-.package(path: "../swift_macro/packages/Navigator")
+.package(path: "../swift_monorepo/packages/JsonCodable")
+.package(path: "../swift_monorepo/packages/Navigator")
 ```
 
 iOS 示例：用 Xcode 打开 `app/example/example.xcodeproj`（已本地引用 `../../packages/JsonCodable`）。修改包源码后重新编译 App 即可同步。

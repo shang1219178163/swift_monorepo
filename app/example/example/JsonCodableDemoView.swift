@@ -51,6 +51,10 @@ struct JsonCodableDemoView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .onAppear {
+            encode()
+            decode()
+        }
     }
 
     private func encode() {
