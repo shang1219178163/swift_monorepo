@@ -93,7 +93,25 @@ NavigatorShort.setup(
 )
 ```
 
-详情见各包 README。
+#### NavigatorShort 路由跳转
+
+| 方法 | 含义 |
+| --- | --- |
+| `toNamed(_:args:)` | push；`await` 返回值 = 目标页 `back`/`pop` 的 `result` |
+| `offNamed(_:args:result:)` | 替换当前页（先 pop 再 push） |
+| `offAllNamed(_:args:)` | 清空当前 Tab 栈后再 push |
+| `until(_:result:)` | 回退直到谓词为 true（该页保留） |
+| `back(count:result:)` | 弹出一层或多层 |
+
+```swift
+let result = await NavigatorShort.toNamed("/detail", args: ["id": 1])
+_ = await NavigatorShort.offNamed("/home", result: ["replaced": true])
+_ = await NavigatorShort.offAllNamed("/login")
+NavigatorShort.until({ $0 == "/home" })
+NavigatorShort.back(count: 1, result: ["ok": true])
+```
+
+详情见 [packages/Navigator/README.md](packages/Navigator/README.md)。
 
 ## 添加新包
 
