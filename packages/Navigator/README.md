@@ -6,7 +6,7 @@ SwiftUI 具名路由引擎（无业务路由表）：多 Tab `NavigationPath`、
 
 本包位于 [swift_monorepo](https://github.com/shang1219178163/swift_monorepo) monorepo 的 `packages/Navigator`。
 
-从 `SwiftUITemplet/Router` 抽出与业务无关的部分：`Navigator`、`NavigatorShort`、`NavigationBarModifier`。业务侧自行维护路由表（如原 `AppRouter` / `AppTab`）并在启动时 `setup`。
+从 `SwiftUITemplet/Router` 抽出与业务无关的部分：`Navigator`、`Get`、`NavigationBarModifier`。业务侧自行维护路由表（如原 `AppRouter` / `AppTab`）并在启动时 `setup`。
 
 ## 要求
 
@@ -43,7 +43,7 @@ import Navigator
 import SwiftUI
 
 // 1. 启动时注入（业务路由表）
-NavigatorShort.setup(
+Get.setup(
     tabCount: 3,
     initialTab: 0,
     containsRoute: { name in AppRouter.contains(name) },
@@ -59,13 +59,13 @@ NavigationStack(path: navigator.pathBinding(for: tab)) {
             AppRouter.destination(settings)
         }
 }
-.environmentObject(NavigatorShort.shared)
+.environmentObject(Get.shared)
 
 // 3. 跳转 / 返回（见下方「路由跳转方法」）
 Task {
-    let result = await NavigatorShort.toNamed("/detail", args: ["id": 1])
+    let result = await Get.toNamed("/detail", args: ["id": 1])
 }
-NavigatorShort.back(result: ["ok": true])
+Get.back(result: ["ok": true])
 ```
 
 页面内用 `@Environment(\.routeSettings)` 取当前页参数。
@@ -78,11 +78,11 @@ NavigatorShort.back(result: ["ok": true])
 
 ## 路由跳转方法
 
-日常推荐用 `NavigatorShort`（GetX 风格）；需要细粒度控制时用 `NavigatorShort.shared`（即 `Navigator`）。须先 `setup`；`onRouteChange` / `navigationBarCustom` 依赖 `@EnvironmentObject` 中的同一引擎实例。
+日常推荐用 `Get`（GetX 风格）；需要细粒度控制时用 `Get.shared`（即 `Navigator`）。须先 `setup`；`onRouteChange` / `navigationBarCustom` 依赖 `@EnvironmentObject` 中的同一引擎实例。
 
 ### 对照表
 
-| NavigatorShort | Navigator | 含义 |
+| Get | Navigator | 含义 |
 | --- | --- | --- |
 | `toNamed(_:args:)` | `pushNamed(_:args:)` | 压入新页，挂起直到该页 `pop`/`back` |
 | `offNamed(_:args:result:)` | `pushReplacementNamed(_:args:result:)` | 先校验再 pop 当前页，再 push |
@@ -91,28 +91,28 @@ NavigatorShort.back(result: ["ok": true])
 | `until(_:result:)` | `popUntil(_:result:)` | 回退直到谓词为 true（该页保留） |
 | `back(count:result:)` | `pop(count:result:)` | 弹出一层或多层 |
 
-### NavigatorShort
+### Get
 
 ```swift
-NavigatorShort.setup(
+Get.setup(
     tabCount: 3,
     containsRoute: AppRouter.contains,
     unknownRoute: "/unknown"   // 不存在的路由 → 此页
 )
 
-let result = await NavigatorShort.toNamed("/detail", args: ["id": 1])
+let result = await Get.toNamed("/detail", args: ["id": 1])
 // 不存在时：等价于 toNamed("/unknown", args: ["id": 1, "intendedRoute": "/nope"])
 
-_ = await NavigatorShort.offNamed("/home", result: ["replaced": true])
-_ = await NavigatorShort.offAllNamed("/login", result: ["cleared": true])
-NavigatorShort.until({ $0 == "/home" }, result: ["from": "settings"])
-NavigatorShort.back(count: 2, result: ["ok": true])
+_ = await Get.offNamed("/home", result: ["replaced": true])
+_ = await Get.offAllNamed("/login", result: ["cleared": true])
+Get.until({ $0 == "/home" }, result: ["from": "settings"])
+Get.back(count: 2, result: ["ok": true])
 ```
 
 ### Navigator（引擎）
 
 ```swift
-let nav = NavigatorShort.shared
+let nav = Get.shared
 
 _ = await nav.pushNamed("/detail", args: ["id": 1])
 
@@ -143,7 +143,7 @@ nav.pop(count: 1, result: ["ok": true])
 | `pathBinding(for:)` | 某 Tab 的 `NavigationPath` 绑定 |
 
 ```swift
-NavigationStack(path: NavigatorShort.shared.pathBinding(for: tab)) {
+NavigationStack(path: Get.shared.pathBinding(for: tab)) {
     RootView()
         .navigatorDestination { AppRouter.destination($0) }
         .onRouteChange { from, to in
@@ -165,7 +165,7 @@ NavigationStack(path: NavigatorShort.shared.pathBinding(for: tab)) {
 | `isLog` | 是否打印路由日志 |
 | `unknownRoute` | 必填；目标不存在时的回退路由名（非空） |
 | `NavigatorArgKey.intendedRoute` | 回退时写入 args 的原目标键 |
-| `NavigatorShort.reset()` | 清空引擎（测试 / Preview） |
+| `Get.reset()` | 清空引擎（测试 / Preview） |
 
 ## 其它类型
 

@@ -5,19 +5,19 @@
 //  Created by Bin Shang on 2026/9/9.
 //
 
-import SwiftUI
 import Navigator
+import SwiftUI
 
 @main
 struct exampleApp: App {
-    init() {
-        AppTab.setupNavigator()
-    }
+  init() {
+    AppTab.setupNavigator()
+  }
 
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .environmentObject(NavigatorShort.shared)
-        }
+  var body: some Scene {
+    WindowGroup {
+      ContentView()
+        .environmentObject(Get.shared)
     }
+  }
 }

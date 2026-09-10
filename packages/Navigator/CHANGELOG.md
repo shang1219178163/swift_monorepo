@@ -11,7 +11,7 @@
 ### Added
 
 - `Navigator` 多 Tab 具名路由引擎（`pushNamed` / `pop` / 监听器）
-- `NavigatorShort` GetX 风格门面与 `setup` 注入
+- `Get` GetX 风格门面与 `setup` 注入
 - `navigationBarCustom`（iOS / Mac Catalyst）
 - 包内 `dlog` 调试日志（`Navigator.isLog` 开关；外部不可见）
 - `setup(unknownRoute:)`：未知目标回退路由（`String`，不可为空）；原目标写入 `args[intendedRoute]`
@@ -28,5 +28,5 @@
 
 - 路由 API 不再 `throws`：未知路由回退 `unknownRoute`；unknown 未注册或防重跳过时返回 `nil`
 - `preventDuplicates` 下沉到 `Navigator.preventsDuplicate`（Short / 引擎共用）
-- `offAllNamed` 增加可选 `result:`；新增 `NavigatorShort.reset()`
+- `offAllNamed` 增加可选 `result:`；新增 `Get.reset()`
 - `initialTab` 范围 precondition；DEBUG 下 path 非 API 增长会 assert

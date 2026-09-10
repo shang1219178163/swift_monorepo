@@ -70,7 +70,7 @@ iOS 示例：用 Xcode 打开 `app/example/example.xcodeproj`（已本地引用 
 | 包 | 说明 |
 | --- | --- |
 | [JsonCodable](packages/JsonCodable) | `@Codable` / `@CodingKey`；`fromData` / `fromJson` / `toJson` |
-| [Navigator](packages/Navigator) | 多 Tab 具名路由；`NavigatorShort` / `navigationBarCustom` |
+| [Navigator](packages/Navigator) | 多 Tab 具名路由；`Get` / `navigationBarCustom` |
 
 ### JsonCodable 速览
 
@@ -85,7 +85,7 @@ iOS 示例：用 Xcode 打开 `app/example/example.xcodeproj`（已本地引用 
 业务侧保留路由表（如 `AppRouter` / `AppTab`），启动时注入：
 
 ```swift
-NavigatorShort.setup(
+Get.setup(
     tabCount: AppTab.count,
     containsRoute: AppRouter.contains,
     preventsDuplicate: AppRouter.preventDuplicates,
@@ -94,7 +94,7 @@ NavigatorShort.setup(
 )
 ```
 
-#### NavigatorShort 路由跳转
+#### Get 路由跳转
 
 | 方法 | 含义 |
 | --- | --- |
@@ -105,11 +105,11 @@ NavigatorShort.setup(
 | `back(count:result:)` | 弹出一层或多层 |
 
 ```swift
-let result = await NavigatorShort.toNamed("/detail", args: ["id": 1])
-_ = await NavigatorShort.offNamed("/home", result: ["replaced": true])
-_ = await NavigatorShort.offAllNamed("/login")
-NavigatorShort.until({ $0 == "/home" })
-NavigatorShort.back(count: 1, result: ["ok": true])
+let result = await Get.toNamed("/detail", args: ["id": 1])
+_ = await Get.offNamed("/home", result: ["replaced": true])
+_ = await Get.offAllNamed("/login")
+Get.until({ $0 == "/home" })
+Get.back(count: 1, result: ["ok": true])
 ```
 
 详情见 [packages/Navigator/README.md](packages/Navigator/README.md)。
