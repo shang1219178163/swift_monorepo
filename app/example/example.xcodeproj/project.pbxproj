@@ -430,7 +430,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = bin.MacTemplet.uiswiftProject.example;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -458,7 +458,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = bin.MacTemplet.uiswiftProject.example;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -476,7 +476,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = bin.MacTemplet.uiswiftProject.exampleTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.1;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/example.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/example";
 			};
@@ -495,7 +495,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = bin.MacTemplet.uiswiftProject.exampleTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.1;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/example.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/example";
 			};
@@ -512,7 +512,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = bin.MacTemplet.uiswiftProject.exampleUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.1;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = example;
 			};
@@ -529,7 +529,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = bin.MacTemplet.uiswiftProject.exampleUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.1;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = example;
 			};
