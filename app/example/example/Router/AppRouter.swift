@@ -16,6 +16,7 @@ enum AppRouter {
         },
         AppPage(name: jsonCodable, title: "JsonCodable") { _ in
             JsonCodableDemoView()
+                .navigationBarCustom(title: "JsonCodable")
         },
         AppPage(name: unknown, title: "未知", preventDuplicates: false) { settings in
             UnknownPageView(args: settings.args ?? [:])
