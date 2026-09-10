@@ -4,7 +4,7 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
-## [1.0.0] - 2026-09-09
+## [1.0.0] - 2026-09-10
 
 ### Added
 
@@ -18,9 +18,11 @@
 
 - JsonCodable：`public`/`package` 宏展开访问级、属性观察器编解码、测试与 `fromJson`/`toJson` 对齐
 - Navigator：`complete` 缓冲、破坏性跳转先校验、Tab 切换同步栈顶、unknown 回退保留参数
+- 示例：`/jsonCodable` 推入页补上 `navigationBarCustom`，避免系统默认返回键
 
 ### Changed
 
 - JsonCodable JSON 辅助 API 由早期 `encode` / `decode` / `toDict` 调整为 `fromData` / `fromJson` / `toJson`
 - JsonCodable / Navigator 调试日志统一为包内 `package func dlog`（外部不可见；Navigator 仍受 `isLog` 控制）
 - Navigator 路由 API 不再 `throws`，未知路由走 `unknownRoute`
+- 门面由 `NavigatorShort` 重命名为 `Get`（文件 `Get.swift`）
