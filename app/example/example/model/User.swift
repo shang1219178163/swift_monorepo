@@ -51,9 +51,12 @@ struct User {
     let rating: Float
     let active: Bool
 
-    @CodingKey("created_at")
-    let createdAt: TimeInterval
-
+    @CodingKey("created_at", isTimestamp: true)
+    let createdAt: Int
+    
+    @CodingKey("update_at", isTimestamp: true)
+    let updateAt: Int?
+    
     let tags: [String]
     let levels: [Int]
     let ratios: [Double]

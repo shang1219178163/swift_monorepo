@@ -25,6 +25,12 @@ private struct RoundTripUser {
     let age: Int
 }
 
+@Codable
+private struct TimestampEvent {
+    @CodingKey("created_at", isTimestamp: true)
+    let createdAt: Int
+}
+
 /// 编码结果为 JSON 数组根节点，用于触发 `rootNotDictionary`。
 private struct JSONArrayRoot: Encodable {
     func encode(to encoder: Encoder) throws {
@@ -337,5 +343,106 @@ final class JsonCodableTests: XCTestCase {
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
+    }
+
+    func testTimestampShadowPropertyExpansion() throws {
+        #if canImport(JsonCodableMacros)
+        assertMacroExpansion(
+            """
+            @Codable
+            struct Event {
+                @CodingKey("created_at", isTimestamp: true)
+                let createdAt: Int
+                @CodingKey("updated_at", isTimestamp: true)
+                let updatedAt: Int?
+            }
+            """,
+            expandedSource: """
+            struct Event {
+                let createdAt: Int
+
+                var createdAtStr: String? {
+                    let __timestamp = createdAt
+                    guard __timestamp != 0 else {
+                        return nil
+                    }
+                    let __v = Int64(__timestamp)
+                    let __seconds: TimeInterval
+                    if String(Swift.abs(__v)).count == 13 {
+                        __seconds = TimeInterval(__v) / 1000
+                    } else {
+                        __seconds = TimeInterval(__v)
+                    }
+                    return String(String(describing: Date(timeIntervalSince1970: __seconds)).prefix(19))
+                }
+                let updatedAt: Int?
+
+                var updatedAtStr: String? {
+                    guard let __timestamp = updatedAt, __timestamp != 0 else {
+                        return nil
+                    }
+                    let __v = Int64(__timestamp)
+                    let __seconds: TimeInterval
+                    if String(Swift.abs(__v)).count == 13 {
+                        __seconds = TimeInterval(__v) / 1000
+                    } else {
+                        __seconds = TimeInterval(__v)
+                    }
+                    return String(String(describing: Date(timeIntervalSince1970: __seconds)).prefix(19))
+                }
+            }
+
+            extension Event: Codable {
+                init(from decoder: Decoder) throws {
+                    let container = try decoder.container(keyedBy: AnyCodingKey.self)
+                    self.createdAt = try container.decode(
+                        Int.self,
+                        forKey: AnyCodingKey(stringValue: "created_at")
+                    )
+                    self.updatedAt = try container.decodeIfPresent(
+                        Int.self,
+                        forKey: AnyCodingKey(stringValue: "updated_at")
+                    )
+                }
+
+                func encode(to encoder: Encoder) throws {
+                    var container = encoder.container(keyedBy: AnyCodingKey.self)
+                    try container.encode(
+                        createdAt,
+                        forKey: AnyCodingKey(stringValue: "created_at")
+                    )
+                    try container.encodeIfPresent(
+                        updatedAt,
+                        forKey: AnyCodingKey(stringValue: "updated_at")
+                    )
+                }
+            }
+            """,
+            macros: testMacros
+        )
+        #else
+        throw XCTSkip("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testTimestampShadowRuntimeValue() throws {
+        let seconds = try TimestampEvent.fromJson(["created_at": 1_725_772_800])
+        XCTAssertEqual(seconds.createdAtStr?.count, 19)
+        XCTAssertEqual(
+            seconds.createdAtStr,
+            JsonTimestamp.string(fromTimestamp: 1_725_772_800)
+        )
+
+        let zero = try TimestampEvent.fromJson(["created_at": 0])
+        XCTAssertNil(zero.createdAtStr)
+
+        let millis = 1_725_772_800_000
+        XCTAssertEqual(
+            JsonTimestamp.string(fromTimestamp: millis),
+            JsonTimestamp.string(fromTimestamp: 1_725_772_800)
+        )
+        XCTAssertTrue(JsonTimestamp.isTimestampValue(1_725_772_800))
+        XCTAssertTrue(JsonTimestamp.isTimestampValue(millis))
+        XCTAssertFalse(JsonTimestamp.isTimestampValue(42))
     }
 }

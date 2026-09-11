@@ -70,7 +70,7 @@ struct DateDemoView: View {
             Button("当前时间") {
                 let timeStamp = Date().timeIntervalSince1970;
                 let dateStr = String(describing: Date(timeIntervalSince1970:timeStamp))
-                dlog(dateStr)
+                dlog([timeStamp, dateStr])
             }
             
         }

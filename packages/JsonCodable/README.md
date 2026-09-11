@@ -95,6 +95,22 @@ let jsonObject = try user.toJson()
 | `key` | 编码使用的规范 key，也是解码时优先匹配的 key |
 | `aliases` | 规范 key 不存在时，按顺序尝试的备用解码 key |
 | `defaultValue` | 所有 key 都**缺失**时使用的默认值（JSON `null` 仍走正常解码，不会回落到默认值）；省略则必填（可选类型可为 `nil`） |
+| `isTimestamp` | 为 `true` 且类型为 `Int`（及 Int32/64、UInt 等）时，生成只读 `{属性名}Str: String?`。原值为 `nil`/`0` → `nil`；否则见下表 |
+
+**时间戳位数**
+
+| 位数 | 单位 | 转换 |
+| --- | --- | --- |
+| 10 | 秒 | `Date(timeIntervalSince1970:)` |
+| 13 | 毫秒 | 先 `/ 1000` 再转 `Date` |
+
+非空时影子值为 `String(describing: Date(...))` 的前 19 个字符。
+
+```swift
+@CodingKey("created_at", isTimestamp: true)
+let createdAt: Int
+// → var createdAtStr: String?  // 0 → nil；否则格式化前 19 字
+```
 
 ### JSON 辅助 API
 

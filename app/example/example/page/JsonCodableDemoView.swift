@@ -91,6 +91,8 @@ struct JsonCodableDemoView: View {
         }
         do {
             let dict = try user.toJson()
+            dlog(["user.createdAtStr", user.createdAtStr ?? "nil"])
+            dlog(["user.updateAtStr", user.updateAtStr ?? "nil"])
             result = .success(
                 title: "解码结果 · \(String(describing: type(of: dict)))",
                 text: String(describing: dict)

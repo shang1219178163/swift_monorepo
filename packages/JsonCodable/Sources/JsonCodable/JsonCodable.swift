@@ -40,9 +40,12 @@ public macro Codable() = #externalMacro(module: "JsonCodableMacros", type: "Coda
 ///   - aliases: Fallback keys tried in order when the canonical key is absent.
 ///   - defaultValue: Value used when none of the keys are present. Omit to require the key
 ///     (or `nil` for optionals).
-@attached(peer)
+///   - isTimestamp: When `true` on an `Int`（族）属性，生成只读影子属性 `{name}Str: String?`。
+///     原值为 `nil` 或 `0` 时返回 `nil`；否则按 10 位秒 / 13 位毫秒转换，取 `Date` 描述前 19 个字符。
+@attached(peer, names: arbitrary)
 public macro CodingKey(
     _ key: String,
     aliases: [String] = [],
-    defaultValue: Any? = nil
+    defaultValue: Any? = nil,
+    isTimestamp: Bool = false
 ) = #externalMacro(module: "JsonCodableMacros", type: "CodingKeyMacro")

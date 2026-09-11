@@ -6,6 +6,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `@CodingKey(..., isTimestamp: true)`：生成 `{name}Str: String?`；原值 `nil`/`0` → `nil`，否则按 10 位秒 / 13 位毫秒取 `Date` 描述前 19 位
+
 ## [1.0.0] - 2026-09-10
 
 ### Fixed

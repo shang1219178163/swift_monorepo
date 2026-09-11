@@ -51,8 +51,8 @@ struct User {
   let rating: Float
   let active: Bool
 
-  @CodingKey("created_at")
-  let createdAt: TimeInterval
+  @CodingKey("created_at", isTimestamp: true)
+  let createdAt: Int
 
   let tags: [String]
   let levels: [Int]
@@ -78,6 +78,7 @@ do {
 
   let again = try User.fromJson(dictNew)
   dlog("fromJson:", again.name)
+  dlog("createdAtStr:", again.createdAtStr)
 } catch {
   dlog("error:", error)
   exit(1)
