@@ -7,6 +7,7 @@ enum AppRouter {
     static let home = "/"
     static let detail = "/detail"
     static let jsonCodable = "/jsonCodable"
+    static let dateDemo = "/dateDemo"
     static let unknown = "/unknown"
 
     static let pages: [AppPage] = [
@@ -17,6 +18,10 @@ enum AppRouter {
         AppPage(name: jsonCodable, title: "JsonCodable") { _ in
             JsonCodableDemoView()
                 .navigationBarCustom(title: "JsonCodable")
+        },
+        AppPage(name: dateDemo, title: "日期互转") { _ in
+            DateDemoView()
+                .navigationBarCustom(title: "日期互转")
         },
         AppPage(name: unknown, title: "未知", preventDuplicates: false) { settings in
             UnknownPageView(args: settings.args ?? [:])

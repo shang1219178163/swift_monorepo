@@ -19,6 +19,9 @@ struct TabHomeView: View {
         Button("JsonCodable 演示") {
           Task { _ = await Get.toNamed(AppRouter.jsonCodable) }
         }
+        Button("日期互转演示") {
+          Task { _ = await Get.toNamed(AppRouter.dateDemo) }
+        }
         Button("不存在的路由") {
           Task {
             _ = await Get.toNamed(
