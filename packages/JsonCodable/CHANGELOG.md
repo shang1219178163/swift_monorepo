@@ -6,6 +6,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- `@CodingKey` 参数 `aliases` 重命名为 `alias`
+
 ### Added
 
 - `@CodingKey(..., isTimestamp: true)`：生成 `{name}Str: String?`；原值 `nil`/`0` → `nil`，否则按 10 位秒 / 13 位毫秒取 `Date` 描述前 19 位

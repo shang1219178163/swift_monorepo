@@ -18,7 +18,7 @@ let testMacros: [String: Macro.Type] = [
 private struct RoundTripUser {
     let id: Int
 
-    @CodingKey("user_name", aliases: ["username", "name"])
+    @CodingKey("user_name", alias: ["username", "name"])
     let name: String
 
     @CodingKey("age", defaultValue: 0)
@@ -87,7 +87,7 @@ final class JsonCodableTests: XCTestCase {
             @Codable
             struct User {
                 let id: Int
-                @CodingKey("user_name", aliases: ["username", "name"])
+                @CodingKey("user_name", alias: ["username", "name"])
                 let name: String
                 @CodingKey("avatar_url")
                 let avatarURL: String?

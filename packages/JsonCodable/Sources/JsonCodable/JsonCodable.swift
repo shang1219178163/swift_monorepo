@@ -16,14 +16,14 @@ public struct AnyCodingKey: Swift.CodingKey, Hashable, Sendable {
 
 /// Generates `Codable` conformance for a struct.
 ///
-/// Use `@CodingKey` on properties to customize JSON keys and aliases.
+/// Use `@CodingKey` on properties to customize JSON keys and alias.
 ///
 /// ```swift
 /// @Codable
 /// struct User {
 ///     let id: Int
 ///
-///     @CodingKey("user_name", aliases: ["username", "name"])
+///     @CodingKey("user_name", alias: ["username", "name"])
 ///     let name: String
 ///
 ///     @CodingKey("avatar_url")
@@ -33,11 +33,11 @@ public struct AnyCodingKey: Swift.CodingKey, Hashable, Sendable {
 @attached(extension, conformances: Codable, names: named(init(from:)), named(encode(to:)))
 public macro Codable() = #externalMacro(module: "JsonCodableMacros", type: "CodableMacro")
 
-/// Marks a stored property with a canonical coding key and optional decode aliases.
+/// Marks a stored property with a canonical coding key and optional decode alias.
 ///
 /// - Parameters:
 ///   - key: Canonical key used for encoding and as the first decode candidate.
-///   - aliases: Fallback keys tried in order when the canonical key is absent.
+///   - alias: Fallback keys tried in order when the canonical key is absent.
 ///   - defaultValue: Value used when none of the keys are present. Omit to require the key
 ///     (or `nil` for optionals).
 ///   - isTimestamp: When `true` on an `Int`（族）属性，生成只读影子属性 `{name}Str: String?`。
@@ -45,7 +45,7 @@ public macro Codable() = #externalMacro(module: "JsonCodableMacros", type: "Coda
 @attached(peer, names: arbitrary)
 public macro CodingKey(
     _ key: String,
-    aliases: [String] = [],
+    alias: [String] = [],
     defaultValue: Any? = nil,
     isTimestamp: Bool = false
 ) = #externalMacro(module: "JsonCodableMacros", type: "CodingKeyMacro")

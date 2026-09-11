@@ -226,7 +226,7 @@ private extension CodableMacro {
 
         for argument in arguments.dropFirst() {
             switch argument.label?.text {
-            case "aliases":
+            case "alias":
                 guard let array = argument.expression.as(ArrayExprSyntax.self) else {
                     context.diagnose(
                         Diagnostic(
@@ -489,7 +489,7 @@ private enum CodingKeyDiagnostic: DiagnosticMessage {
         case .invalidCodingKey(let name):
             return "Invalid @CodingKey on '\(name)'."
         case .invalidAliases(let name):
-            return "Invalid aliases on '\(name)'."
+            return "Invalid alias on '\(name)'."
         case .duplicateKey(let key):
             return "Duplicate CodingKey '\(key)'."
         case .multipleBindingsNotSupported:

@@ -5,16 +5,16 @@ import JsonCodable
 struct Tag {
     let id: Int
 
-    @CodingKey("tag_name", aliases: ["name"])
+    @CodingKey("tag_name", alias: ["name"])
     let name: String
 }
 
 @Codable
 struct Address {
-    @CodingKey("city_name", aliases: ["city"])
+    @CodingKey("city_name", alias: ["city"])
     let city: String
 
-    @CodingKey("zip_code", aliases: ["zip"])
+    @CodingKey("zip_code", alias: ["zip"])
     let zip: String?
 
     let latitude: Double
@@ -38,10 +38,10 @@ struct Profile {
 struct User {
     let id: Int
 
-    @CodingKey("username", aliases: ["user_name", "name"])
+    @CodingKey("username", alias: ["user_name", "name"])
     let name: String
 
-    @CodingKey("avatar_url", aliases: ["avatar", "avatarUrl"])
+    @CodingKey("avatar_url", alias: ["avatar", "avatarUrl"])
     let avatar: String?
 
     @CodingKey("age", defaultValue: 0)
@@ -63,7 +63,7 @@ struct User {
 
     let profile: Profile
 
-    @CodingKey("favorite_tags", aliases: ["tags_detail"])
+    @CodingKey("favorite_tags", alias: ["tags_detail"])
     let favoriteTags: [Tag]
 
     @CodingKey("extra", defaultValue: [String: String]())
