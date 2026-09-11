@@ -6,15 +6,7 @@
 
 ## [Unreleased]
 
-### Changed
-
-- `@CodingKey` 参数 `aliases` 重命名为 `alias`
-
-### Added
-
-- `@CodingKey(..., isTimestamp: true)`：生成 `{name}Str: String?`；原值 `nil`/`0` → `nil`，否则按 10 位秒 / 13 位毫秒取 `Date` 描述前 19 位
-
-## [1.0.0] - 2026-09-10
+## [1.0.0] - 2026-09-11
 
 ### Fixed
 
@@ -32,12 +24,14 @@
 - 配置参数由闭包 `configure` 改为可选 `coder: JSONDecoder?` / `JSONEncoder?`
 - 移除旧版 `encode` / `decode` / `toDict` 以及 `JsonCodableError.invalidUTF8`
 - `dlog` 复用静态 `DateFormatter`；README 澄清 `defaultValue` 不覆盖 JSON `null`、`@CodingKey` 需配合 `@Codable`
+- `@CodingKey` 参数 `aliases` 重命名为 `alias`
 
 ### Added
 
 - `JsonCodableClient` 使用 `user.json` 资源演示 `fromData` / `toJson`
 - monorepo 示例 App `app/example` 本地依赖本包做编解码演示
 - 包内 `package func dlog`（仅本包目标可见）
+- `@CodingKey(..., isTimestamp: true)`：生成 `{name}Str: String?`；原值 `nil`/`0` → `nil`，否则按 10 位秒 / 13 位毫秒取 `Date` 描述前 19 位
 
 ## [0.1.0] - 2026-09-09
 
