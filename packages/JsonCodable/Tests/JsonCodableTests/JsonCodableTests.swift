@@ -32,6 +32,12 @@ private struct AliasDefaultItem {
 }
 
 @JsonCodable
+private struct OptionalDefaultItem {
+    @CodingKey("age", defaultValue: 18)
+    let age: Int?
+}
+
+@JsonCodable
 private struct TimestampEvent {
     @CodingKey("created_at", isTimestamp: true)
     let createdAt: Int
@@ -61,6 +67,11 @@ final class JsonCodableTests: XCTestCase {
         XCTAssertEqual(user.id, 1)
         XCTAssertEqual(user.name, "Alex")
         XCTAssertEqual(user.age, 0)
+
+        let optionalNull = try OptionalDefaultItem.fromJson(["age": NSNull()])
+        XCTAssertEqual(optionalNull.age, 18)
+        let optionalValue = try OptionalDefaultItem.fromJson(["age": 21])
+        XCTAssertEqual(optionalValue.age, 21)
     }
 
     func testMissingKeyWithDefaultThrows() {
@@ -70,6 +81,11 @@ final class JsonCodableTests: XCTestCase {
                 "username": "Alex",
             ])
         ) { error in
+            guard case DecodingError.keyNotFound = error else {
+                return XCTFail("expected keyNotFound, got \(error)")
+            }
+        }
+        XCTAssertThrowsError(try OptionalDefaultItem.fromJson([:])) { error in
             guard case DecodingError.keyNotFound = error else {
                 return XCTFail("expected keyNotFound, got \(error)")
             }
@@ -261,40 +277,20 @@ final class JsonCodableTests: XCTestCase {
             extension User: Codable {
                 init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: AnyCodingKey.self)
-                    if container.contains(AnyCodingKey(stringValue: "user_name")) {
-                        if try container.decodeNil(forKey: AnyCodingKey(stringValue: "user_name")) {
-                            self.name = "guest"
-                        } else {
-                            self.name = try container.decode(
-                                String.self,
-                                forKey: AnyCodingKey(stringValue: "user_name")
-                            )
-                        }
+                    if container.contains(AnyCodingKey(stringValue: "user_name")), try container.decodeNil(forKey: AnyCodingKey(stringValue: "user_name")) {
+                        self.name = "guest"
                     } else {
-                        throw DecodingError.keyNotFound(
-                            AnyCodingKey(stringValue: "user_name"),
-                            DecodingError.Context(
-                                codingPath: decoder.codingPath,
-                                debugDescription: "No value associated with key \\"user_name\\"."
-                            )
+                        self.name = try container.decode(
+                            String.self,
+                            forKey: AnyCodingKey(stringValue: "user_name")
                         )
                     }
-                    if container.contains(AnyCodingKey(stringValue: "age")) {
-                        if try container.decodeNil(forKey: AnyCodingKey(stringValue: "age")) {
-                            self.age = 0
-                        } else {
-                            self.age = try container.decode(
-                                Int.self,
-                                forKey: AnyCodingKey(stringValue: "age")
-                            )
-                        }
+                    if container.contains(AnyCodingKey(stringValue: "age")), try container.decodeNil(forKey: AnyCodingKey(stringValue: "age")) {
+                        self.age = 0
                     } else {
-                        throw DecodingError.keyNotFound(
-                            AnyCodingKey(stringValue: "age"),
-                            DecodingError.Context(
-                                codingPath: decoder.codingPath,
-                                debugDescription: "No value associated with key \\"age\\"."
-                            )
+                        self.age = try container.decode(
+                            Int.self,
+                            forKey: AnyCodingKey(stringValue: "age")
                         )
                     }
                 }

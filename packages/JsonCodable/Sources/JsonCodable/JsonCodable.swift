@@ -38,9 +38,7 @@ public macro JsonCodable() = #externalMacro(module: "JsonCodableMacros", type: "
 /// - Parameters:
 ///   - key: Canonical key used for encoding and as the first decode candidate.
 ///   - alias: Fallback keys tried in order when the canonical key is absent.
-///   - defaultValue: When set, the key (or an alias) must be present; JSON `null` uses this
-///     value. A missing key throws `DecodingError.keyNotFound`. Omit to require a non-null value
-///     (optionals may still decode as `nil`).
+///   - defaultValue: If set, a missing key throws `keyNotFound`; JSON `null` uses this value.
 ///   - isTimestamp: When `true` on an `Int`（族）属性，生成只读影子属性 `{name}Str: String?`。
 ///     原值为 `nil` 或 `0` 时返回 `nil`；否则按 10 位秒 / 13 位毫秒转换，取 `Date` 描述前 19 个字符。
 @attached(peer, names: arbitrary)

@@ -364,20 +364,15 @@ extension CodableMacro {
 
   fileprivate static func makeDecodeStatement(property: CodableProperty) -> String {
     let keys = property.allKeys
+    if property.hasDefault {
+      return makeDefaultDecode(property: property, keys: keys)
+    }
+
     let decodeMethod = property.isOptional ? "decodeIfPresent" : "decode"
     let valueType = property.wrappedType
 
     if keys.count == 1 {
       let key = keys[0]
-      if property.hasDefault {
-        return makeKeyedDecodeWithDefault(
-          property: property,
-          key: key,
-          valueType: valueType,
-          decodeMethod: decodeMethod
-        )
-      }
-
       return """
         self.\(property.name) = try container.\(decodeMethod)(
             \(valueType).self,
@@ -389,34 +384,54 @@ extension CodableMacro {
     return makeAliasDecode(property: property, keys: keys)
   }
 
-  /// 单键 + `defaultValue`：键缺失抛错；值为 `null` 时用默认值。
-  fileprivate static func makeKeyedDecodeWithDefault(
-    property: CodableProperty,
-    key: String,
-    valueType: String,
-    decodeMethod: String
-  ) -> String {
+  /// `defaultValue`：键在且为 `null` 时用默认值，否则走 `decode`（键缺失即 `keyNotFound`）。
+  fileprivate static func makeDefaultDecode(property: CodableProperty, keys: [String]) -> String {
+    let valueType = property.wrappedType
     let defaultValue = property.defaultValueExpression!
-    return """
-      if container.contains(AnyCodingKey(stringValue: "\(escape(key))")) {
-          if try container.decodeNil(forKey: AnyCodingKey(stringValue: "\(escape(key))")) {
-              self.\(property.name) = \(defaultValue)
-          } else {
-              self.\(property.name) = try container.\(decodeMethod)(
-                  \(valueType).self,
-                  forKey: AnyCodingKey(stringValue: "\(escape(key))")
-              )
-          }
-      } else {
-          throw DecodingError.keyNotFound(
-              AnyCodingKey(stringValue: "\(escape(key))"),
-              DecodingError.Context(
-                  codingPath: decoder.codingPath,
-                  debugDescription: "No value associated with key \\"\(escape(key))\\"."
-              )
+
+    func decodeAssignment(_ key: String) -> String {
+      """
+      try container.decode(
+              \(valueType).self,
+              forKey: AnyCodingKey(stringValue: "\(escape(key))")
           )
+      """
+    }
+
+    if keys.count == 1 {
+      let key = keys[0]
+      return """
+        if container.contains(AnyCodingKey(stringValue: "\(escape(key))")), try container.decodeNil(forKey: AnyCodingKey(stringValue: "\(escape(key))")) {
+            self.\(property.name) = \(defaultValue)
+        } else {
+            self.\(property.name) = \(decodeAssignment(key))
+        }
+        """
+    }
+
+    var parts: [String] = []
+    for (index, key) in keys.enumerated() {
+      let keyword = index == 0 ? "if" : "else if"
+      parts.append(
+        """
+        \(keyword) container.contains(AnyCodingKey(stringValue: "\(escape(key))")) {
+            if try container.decodeNil(forKey: AnyCodingKey(stringValue: "\(escape(key))")) {
+                self.\(property.name) = \(defaultValue)
+            } else {
+                self.\(property.name) = \(decodeAssignment(key))
+            }
+        }
+        """
+      )
+    }
+    parts.append(
+      """
+      else {
+          self.\(property.name) = \(decodeAssignment(keys[0]))
       }
       """
+    )
+    return parts.joined(separator: "\n")
   }
 
   fileprivate static func makeAliasDecode(property: CodableProperty, keys: [String]) -> String {
@@ -435,60 +450,17 @@ extension CodableMacro {
     var parts: [String] = []
     for (index, key) in keys.dropLast().enumerated() {
       let keyword = index == 0 ? "if" : "else if"
-      if property.hasDefault {
-        let defaultValue = property.defaultValueExpression!
-        parts.append(
-          """
-          \(keyword) container.contains(AnyCodingKey(stringValue: "\(escape(key))")) {
-              if try container.decodeNil(forKey: AnyCodingKey(stringValue: "\(escape(key))")) {
-                  self.\(property.name) = \(defaultValue)
-              } else {
-                  self.\(property.name) = try container.\(decodeMethod)(
-                      \(valueType).self,
-                      forKey: AnyCodingKey(stringValue: "\(escape(key))")
-                  )
-              }
-          }
-          """
-        )
-      } else {
-        parts.append(
-          """
-          \(keyword) container.contains(AnyCodingKey(stringValue: "\(escape(key))")) {
-              self.\(property.name) = \(decodeAssignment(key))
-          }
-          """
-        )
-      }
-    }
-
-    let last = keys.last!
-    let primary = keys[0]
-    if property.hasDefault {
-      let defaultValue = property.defaultValueExpression!
       parts.append(
         """
-        else if container.contains(AnyCodingKey(stringValue: "\(escape(last))")) {
-            if try container.decodeNil(forKey: AnyCodingKey(stringValue: "\(escape(last))")) {
-                self.\(property.name) = \(defaultValue)
-            } else {
-                self.\(property.name) = try container.\(decodeMethod)(
-                    \(valueType).self,
-                    forKey: AnyCodingKey(stringValue: "\(escape(last))")
-                )
-            }
-        } else {
-            throw DecodingError.keyNotFound(
-                AnyCodingKey(stringValue: "\(escape(primary))"),
-                DecodingError.Context(
-                    codingPath: decoder.codingPath,
-                    debugDescription: "No value associated with key \\"\(escape(primary))\\" (or its aliases)."
-                )
-            )
+        \(keyword) container.contains(AnyCodingKey(stringValue: "\(escape(key))")) {
+            self.\(property.name) = \(decodeAssignment(key))
         }
         """
       )
-    } else if property.isOptional {
+    }
+
+    let last = keys.last!
+    if property.isOptional {
       parts.append(
         """
         else if container.contains(AnyCodingKey(stringValue: "\(escape(last))")) {

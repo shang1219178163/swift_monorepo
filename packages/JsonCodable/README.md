@@ -94,7 +94,7 @@ let jsonObject = try user.toJson()
 | --- | --- |
 | `key` | 编码使用的规范 key，也是解码时优先匹配的 key |
 | `alias` | 规范 key 不存在时，按顺序尝试的备用解码 key |
-| `defaultValue` | 键必须存在：缺失抛 `keyNotFound`；值为 JSON `null` 时用该默认值兜底；省略则按标准 Codable（非可选必填，可选可为 `nil`） |
+| `defaultValue` | 键缺失抛 `keyNotFound`；JSON `null` 用该值兜底 |
 | `isTimestamp` | 为 `true` 且类型为 `Int`（及 Int32/64、UInt 等）时，生成只读 `{属性名}Str: String?`。原值为 `nil`/`0` → `nil`；否则见下表 |
 
 **时间戳位数**
