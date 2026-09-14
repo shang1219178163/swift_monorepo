@@ -9,12 +9,12 @@ import XCTest
 import JsonCodableMacros
 
 let testMacros: [String: Macro.Type] = [
-    "Codable": CodableMacro.self,
+    "JsonCodable": CodableMacro.self,
     "CodingKey": CodingKeyMacro.self,
 ]
 #endif
 
-@Codable
+@JsonCodable
 private struct RoundTripUser {
     let id: Int
 
@@ -25,7 +25,7 @@ private struct RoundTripUser {
     let age: Int
 }
 
-@Codable
+@JsonCodable
 private struct TimestampEvent {
     @CodingKey("created_at", isTimestamp: true)
     let createdAt: Int
@@ -84,7 +84,7 @@ final class JsonCodableTests: XCTestCase {
         #if canImport(JsonCodableMacros)
         assertMacroExpansion(
             """
-            @Codable
+            @JsonCodable
             struct User {
                 let id: Int
                 @CodingKey("user_name", alias: ["username", "name"])
@@ -159,7 +159,7 @@ final class JsonCodableTests: XCTestCase {
         #if canImport(JsonCodableMacros)
         assertMacroExpansion(
             """
-            @Codable
+            @JsonCodable
             struct Point {
                 let x: Int
                 let y: Int
@@ -208,7 +208,7 @@ final class JsonCodableTests: XCTestCase {
         #if canImport(JsonCodableMacros)
         assertMacroExpansion(
             """
-            @Codable
+            @JsonCodable
             struct User {
                 @CodingKey("user_name", defaultValue: "guest")
                 let name: String
@@ -267,7 +267,7 @@ final class JsonCodableTests: XCTestCase {
         #if canImport(JsonCodableMacros)
         assertMacroExpansion(
             """
-            @Codable
+            @JsonCodable
             public struct User {
                 public let id: Int
             }
@@ -306,7 +306,7 @@ final class JsonCodableTests: XCTestCase {
         #if canImport(JsonCodableMacros)
         assertMacroExpansion(
             """
-            @Codable
+            @JsonCodable
             struct Counter {
                 var count: Int {
                     didSet {}
@@ -349,7 +349,7 @@ final class JsonCodableTests: XCTestCase {
         #if canImport(JsonCodableMacros)
         assertMacroExpansion(
             """
-            @Codable
+            @JsonCodable
             struct Event {
                 @CodingKey("created_at", isTimestamp: true)
                 let createdAt: Int

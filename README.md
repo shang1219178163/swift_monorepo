@@ -8,7 +8,7 @@ Swift 宏与通用 SwiftUI 组件的 monorepo。每个可发布库放在 `packag
 swift_monorepo/
 ├── Package.swift                 # 伞形包（对外产品入口）
 ├── packages/
-│   ├── JsonCodable/              # @Codable / @CodingKey 与 JSON 辅助 API
+│   ├── JsonCodable/              # @JsonCodable / @CodingKey 与 JSON 辅助 API
 │   └── Navigator/                # SwiftUI 具名路由引擎（无业务表）
 ├── third_party/
 │   └── SFSafeSymbols/            # 示例 App 本地 vendored（GitHub 拉取不稳时用）
@@ -69,7 +69,7 @@ iOS 示例：用 Xcode 打开 `app/example/example.xcodeproj`（已本地引用 
 
 | 包 | 说明 |
 | --- | --- |
-| [JsonCodable](packages/JsonCodable) | `@Codable` / `@CodingKey`；`fromData` / `fromJson` / `toJson` |
+| [JsonCodable](packages/JsonCodable) | `@JsonCodable` / `@CodingKey`；`fromData` / `fromJson` / `toJson` |
 | [Navigator](packages/Navigator) | 多 Tab 具名路由；`Get` / `navigationBarCustom` |
 
 ### JsonCodable 速览

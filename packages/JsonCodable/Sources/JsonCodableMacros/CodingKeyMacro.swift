@@ -3,7 +3,7 @@ import SwiftSyntax
 import SwiftSyntaxMacros
 
 /// Marker + optional timestamp shadow peer.
-/// `@Codable` reads `@CodingKey` for coding keys; when `isTimestamp: true`, emits `{name}Str`.
+/// `@JsonCodable` reads `@CodingKey` for coding keys; when `isTimestamp: true`, emits `{name}Str`.
 public struct CodingKeyMacro: PeerMacro {
     public static func expansion(
         of node: AttributeSyntax,

@@ -1,16 +1,16 @@
 import Foundation
 import JsonCodable
 
-@Codable
-struct Tag {
+@JsonCodable
+struct Tag: Equatable {
   let id: Int
 
   @CodingKey("tag_name", alias: ["name"])
   let name: String
 }
 
-@Codable
-struct Address {
+@JsonCodable
+struct Address: Equatable {
   @CodingKey("city_name", alias: ["city"])
   let city: String
 
@@ -21,8 +21,8 @@ struct Address {
   let longitude: Double
 }
 
-@Codable
-struct Profile {
+@JsonCodable
+struct Profile: Equatable {
   let bio: String
 
   @CodingKey("is_verified", defaultValue: false)
@@ -34,8 +34,8 @@ struct Profile {
   let address: Address
 }
 
-@Codable
-struct User {
+@JsonCodable
+struct User: Equatable {
   let id: Int
 
   @CodingKey("username", alias: ["user_name", "name"])
@@ -76,9 +76,10 @@ do {
   let dictNew = try user.toJson()
   dlog("toJson:", dictNew)
 
-  let again = try User.fromJson(dictNew)
-  dlog("fromJson:", again.name)
-  dlog("createdAtStr:", again.createdAtStr)
+  let userNew = try User.fromJson(dictNew)
+  dlog("user == userNew:", user == userNew ? "true" : "false")
+  dlog("name:", userNew.name)
+  dlog("createdAtStr:", userNew.createdAtStr ?? "nil")
 } catch {
   dlog("error:", error)
   exit(1)

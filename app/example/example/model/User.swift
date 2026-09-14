@@ -1,7 +1,7 @@
 import Foundation
 import JsonCodable
 
-@Codable
+@JsonCodable
 struct Tag {
     let id: Int
 
@@ -9,7 +9,7 @@ struct Tag {
     let name: String
 }
 
-@Codable
+@JsonCodable
 struct Address {
     @CodingKey("city_name", alias: ["city"])
     let city: String
@@ -21,7 +21,7 @@ struct Address {
     let longitude: Double
 }
 
-@Codable
+@JsonCodable
 struct Profile {
     let bio: String
 
@@ -34,7 +34,7 @@ struct Profile {
     let address: Address
 }
 
-@Codable
+@JsonCodable
 struct User {
     let id: Int
 

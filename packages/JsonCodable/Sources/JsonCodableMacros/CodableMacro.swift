@@ -483,7 +483,7 @@ private enum CodingKeyDiagnostic: DiagnosticMessage {
     var message: String {
         switch self {
         case .onlyStructSupported:
-            return "@Codable can only be attached to a struct."
+            return "@JsonCodable can only be attached to a struct."
         case .propertyRequiresType(let name):
             return "Property '\(name)' requires an explicit type."
         case .invalidCodingKey(let name):
@@ -493,7 +493,7 @@ private enum CodingKeyDiagnostic: DiagnosticMessage {
         case .duplicateKey(let key):
             return "Duplicate CodingKey '\(key)'."
         case .multipleBindingsNotSupported:
-            return "@Codable does not support multiple bindings in one declaration; split into separate properties."
+            return "@JsonCodable does not support multiple bindings in one declaration; split into separate properties."
         case .stringLiteralRequired:
             return "@CodingKey requires a string literal."
         }

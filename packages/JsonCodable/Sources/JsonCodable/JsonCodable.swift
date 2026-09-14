@@ -1,4 +1,4 @@
-/// A type-erased `CodingKey` used by `@Codable` expansions for alias lookup.
+/// A type-erased `CodingKey` used by `@JsonCodable` expansions for alias lookup.
 public struct AnyCodingKey: Swift.CodingKey, Hashable, Sendable {
     public let stringValue: String
     public let intValue: Int?
@@ -19,7 +19,7 @@ public struct AnyCodingKey: Swift.CodingKey, Hashable, Sendable {
 /// Use `@CodingKey` on properties to customize JSON keys and alias.
 ///
 /// ```swift
-/// @Codable
+/// @JsonCodable
 /// struct User {
 ///     let id: Int
 ///
@@ -31,7 +31,7 @@ public struct AnyCodingKey: Swift.CodingKey, Hashable, Sendable {
 /// }
 /// ```
 @attached(extension, conformances: Codable, names: named(init(from:)), named(encode(to:)))
-public macro Codable() = #externalMacro(module: "JsonCodableMacros", type: "CodableMacro")
+public macro JsonCodable() = #externalMacro(module: "JsonCodableMacros", type: "CodableMacro")
 
 /// Marks a stored property with a canonical coding key and optional decode alias.
 ///

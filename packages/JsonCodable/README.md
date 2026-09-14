@@ -2,13 +2,13 @@
 
 **当前版本：1.0.0**（详见 [CHANGELOG.md](CHANGELOG.md)）
 
-Swift 宏驱动的 `Codable` 增强库：用 `@Codable` / `@CodingKey` 生成编解码实现，支持 JSON key 别名、缺省默认值，并提供 `Data` / 字典 ⇄ 模型互转。
+Swift 宏驱动的 `Codable` 增强库：用 `@JsonCodable` / `@CodingKey` 生成编解码实现，支持 JSON key 别名、缺省默认值，并提供 `Data` / 字典 ⇄ 模型互转。
 
 本包位于 [swift_monorepo](https://github.com/shang1219178163/swift_monorepo) monorepo 的 `packages/JsonCodable`。
 
 ## 特性
 
-- `@Codable`：为结构体自动生成 `Codable` 实现
+- `@JsonCodable`：为结构体自动生成 `Codable` 实现
 - `@CodingKey`：自定义编码 key、解码别名、缺省默认值
 - `fromData` / `fromJson` / `toJson`：`Data`、字典与模型互转（可传入自定义 `JSONDecoder` / `JSONEncoder`）
 - `JsonCodableError`：根节点非对象等明确错误
@@ -59,7 +59,7 @@ Xcode 工程也可添加本地包：`File` → `Add Package Dependencies…` →
 ```swift
 import JsonCodable
 
-@Codable
+@JsonCodable
 struct User {
     let id: Int
 
@@ -132,7 +132,7 @@ encoder.dateEncodingStrategy = .secondsSince1970
 let dict = try user.toJson(coder: encoder)
 ```
 
-> `@CodingKey` 需与 `@Codable` 一起使用，单独标注不会生成任何代码。
+> `@CodingKey` 需与 `@JsonCodable` 一起使用，单独标注不会生成任何代码。
 
 > 已在 `@CodingKey` 中写明 snake_case 等 key 时，不要再设 `keyDecodingStrategy = .convertFromSnakeCase`，否则键名会被二次转换导致解码失败。
 
