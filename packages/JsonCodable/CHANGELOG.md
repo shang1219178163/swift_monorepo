@@ -24,7 +24,7 @@
   - `toJson(coder:)`：模型 → 字典（非 JSON 字符串；数值等可能为 `NSNumber` 桥接）
 - 配置参数由闭包 `configure` 改为可选 `coder: JSONDecoder?` / `JSONEncoder?`
 - 移除旧版 `encode` / `decode` / `toDict` 以及 `JsonCodableError.invalidUTF8`
-- `dlog` 复用静态 `DateFormatter`；`@CodingKey` 需配合 `@JsonCodable`
+- `dlog` 按 locale + format 缓存 `DateFormatter`，locale 用 `autoupdatingCurrent`；`@CodingKey` 需配合 `@JsonCodable`
 - `defaultValue`：键缺失抛 `DecodingError.keyNotFound`；JSON `null` 用默认值兜底（有默认值时用 `decode`，可选缺键同样抛错）
 - `@CodingKey` 参数 `aliases` 重命名为 `alias`
 
