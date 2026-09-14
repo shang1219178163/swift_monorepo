@@ -6,6 +6,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- `defaultValue` 语义：键缺失抛 `DecodingError.keyNotFound`；值为 JSON `null` 时用默认值兜底
+
 ## [1.0.0] - 2026-09-14
 
 ### Fixed

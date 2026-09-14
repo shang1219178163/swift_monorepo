@@ -44,8 +44,8 @@ struct User: Equatable {
   @CodingKey("avatar_url", alias: ["avatar", "avatarUrl"])
   let avatar: String?
 
-  @CodingKey("age", defaultValue: 0)
-  let age: Int
+  @CodingKey("age", defaultValue: 18)
+  let age: Int?
 
   let score: Double
   let rating: Float
@@ -79,6 +79,7 @@ do {
   let userNew = try User.fromJson(dictNew)
   dlog("user == userNew:", user == userNew ? "true" : "false")
   dlog("name:", userNew.name)
+  dlog("age:", userNew.age ?? "nil")
   dlog("createdAtStr:", userNew.createdAtStr ?? "nil")
 } catch {
   dlog("error:", error)

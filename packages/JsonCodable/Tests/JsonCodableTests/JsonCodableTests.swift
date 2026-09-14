@@ -26,6 +26,12 @@ private struct RoundTripUser {
 }
 
 @JsonCodable
+private struct AliasDefaultItem {
+    @CodingKey("score", alias: ["points"], defaultValue: 0)
+    let score: Int
+}
+
+@JsonCodable
 private struct TimestampEvent {
     @CodingKey("created_at", isTimestamp: true)
     let createdAt: Int
@@ -50,10 +56,40 @@ final class JsonCodableTests: XCTestCase {
         let user = try RoundTripUser.fromJson([
             "id": 1,
             "username": "Alex",
+            "age": NSNull(),
         ])
         XCTAssertEqual(user.id, 1)
         XCTAssertEqual(user.name, "Alex")
         XCTAssertEqual(user.age, 0)
+    }
+
+    func testMissingKeyWithDefaultThrows() {
+        XCTAssertThrowsError(
+            try RoundTripUser.fromJson([
+                "id": 1,
+                "username": "Alex",
+            ])
+        ) { error in
+            guard case DecodingError.keyNotFound = error else {
+                return XCTFail("expected keyNotFound, got \(error)")
+            }
+        }
+    }
+
+    func testAliasNullUsesDefaultValue() throws {
+        let byAlias = try AliasDefaultItem.fromJson(["points": NSNull()])
+        XCTAssertEqual(byAlias.score, 0)
+
+        let byKey = try AliasDefaultItem.fromJson(["score": NSNull()])
+        XCTAssertEqual(byKey.score, 0)
+    }
+
+    func testAliasAndPrimaryMissingWithDefaultThrows() {
+        XCTAssertThrowsError(try AliasDefaultItem.fromJson([:])) { error in
+            guard case DecodingError.keyNotFound = error else {
+                return XCTFail("expected keyNotFound, got \(error)")
+            }
+        }
     }
 
     func testToJsonRoundTrip() throws {
@@ -226,20 +262,40 @@ final class JsonCodableTests: XCTestCase {
                 init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: AnyCodingKey.self)
                     if container.contains(AnyCodingKey(stringValue: "user_name")) {
-                        self.name = try container.decode(
-                            String.self,
-                            forKey: AnyCodingKey(stringValue: "user_name")
-                        )
+                        if try container.decodeNil(forKey: AnyCodingKey(stringValue: "user_name")) {
+                            self.name = "guest"
+                        } else {
+                            self.name = try container.decode(
+                                String.self,
+                                forKey: AnyCodingKey(stringValue: "user_name")
+                            )
+                        }
                     } else {
-                        self.name = "guest"
+                        throw DecodingError.keyNotFound(
+                            AnyCodingKey(stringValue: "user_name"),
+                            DecodingError.Context(
+                                codingPath: decoder.codingPath,
+                                debugDescription: "No value associated with key \\"user_name\\"."
+                            )
+                        )
                     }
                     if container.contains(AnyCodingKey(stringValue: "age")) {
-                        self.age = try container.decode(
-                            Int.self,
-                            forKey: AnyCodingKey(stringValue: "age")
-                        )
+                        if try container.decodeNil(forKey: AnyCodingKey(stringValue: "age")) {
+                            self.age = 0
+                        } else {
+                            self.age = try container.decode(
+                                Int.self,
+                                forKey: AnyCodingKey(stringValue: "age")
+                            )
+                        }
                     } else {
-                        self.age = 0
+                        throw DecodingError.keyNotFound(
+                            AnyCodingKey(stringValue: "age"),
+                            DecodingError.Context(
+                                codingPath: decoder.codingPath,
+                                debugDescription: "No value associated with key \\"age\\"."
+                            )
+                        )
                     }
                 }
 

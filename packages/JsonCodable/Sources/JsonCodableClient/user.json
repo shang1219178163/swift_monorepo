@@ -2,7 +2,7 @@
   "id": 1,
   "username": "Alex",
   "avatar_url": "https://example.com/a.png",
-  "age": 20,
+  "age": null,
   "score": 98.5,
   "rating": 4.5,
   "active": true,
