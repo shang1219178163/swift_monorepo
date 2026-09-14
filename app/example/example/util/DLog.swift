@@ -1,6 +1,6 @@
 import Foundation
 
-/// Navigator 包内调试日志（`package`：仅本包目标可见；受 `Navigator.isLog` 控制）。
+/// 示例 App 调试日志。
 ///
 /// 格式：`[日期时间 类名.函数名 Line:行]: 日志内容`
 @MainActor

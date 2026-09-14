@@ -49,7 +49,7 @@ enum AppTab: Int, CaseIterable, Identifiable, Hashable {
       unknownRoute: AppRouter.unknown
     )
     #if DEBUG
-      Get.isLog = true
+      Get.debug = true
     #endif
   }
 

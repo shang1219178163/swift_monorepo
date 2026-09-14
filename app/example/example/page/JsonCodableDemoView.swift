@@ -1,8 +1,10 @@
 import SwiftUI
 import JsonCodable
+import Navigator
 
 /// JsonCodable 编解码演示（中心 Tab / 路由页复用）。
 struct JsonCodableDemoView: View {
+    @Environment(\.currentRoute) private var currentRoute
     @State private var user: User?
     @State private var mode: Mode = .decode
     @State private var result: CodecResult = .idle
@@ -20,6 +22,8 @@ struct JsonCodableDemoView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            routeArgsBanner
+
             HStack(spacing: 12) {
                 Spacer(minLength: 0)
                 codecButton("编码", active: mode == .encode, action: encode)
@@ -27,6 +31,7 @@ struct JsonCodableDemoView: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal)
+            
 
             switch result {
             case .idle:
@@ -60,6 +65,28 @@ struct JsonCodableDemoView: View {
             _ = encodeModel()
             decode()
         }
+    }
+
+    private var routeArgsBanner: some View {
+        let name = currentRoute?.name ?? "root"
+        let args = currentRoute?.args ?? [:]
+        let keys = args.keys.sorted()
+        return VStack(alignment: .leading, spacing: 4) {
+            Text("路由 \(name)")
+                .font(.caption.bold())
+            ForEach(keys, id: \.self) { key in
+                Text("\(key): \(stringify(args[key]))")
+                    .font(.system(size: 12, design: .monospaced))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal)
+    }
+
+    private func stringify(_ value: Any?) -> String {
+        guard let value else { return "nil" }
+        if let s = value as? String { return s }
+        return String(describing: value)
     }
 
     @ViewBuilder

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Navigator 包内调试日志（`package`：仅本包目标可见；受 `Navigator.isLog` 控制）。
+/// Navigator 包内调试日志（`package`：仅本包目标可见；受 `Navigator.debug` 控制）。
 ///
 /// 格式：`[日期时间 类名.函数名 Line:行]: 日志内容`
 @MainActor
@@ -10,7 +10,7 @@ package func dlog(
     function: String = #function,
     line: Int = #line
 ) {
-    guard Navigator.isLog else { return }
+    guard Navigator.debug else { return }
     let message = items.map { String(describing: $0) }.joined(separator: " ")
     let fileName = file.split(separator: "/").last.map(String.init) ?? file
     let className = fileName.replacingOccurrences(of: ".swift", with: "")

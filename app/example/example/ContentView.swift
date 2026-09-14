@@ -18,6 +18,9 @@ struct ContentView: View {
         tabStack(tab: tab)
       }
     }
+    .onTabChanged { from, to in
+      dlog("tab \(from) → \(to)")
+    }
   }
 
   @ViewBuilder

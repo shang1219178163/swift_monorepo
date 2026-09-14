@@ -6,6 +6,17 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- `Get.reset()` / 按 `tabCount` 重建引擎前先 `finishPendingWaits()`，避免未决 `await` 泄漏 continuation
+- `Get.setup` 再次调用会覆盖 `containsRoute` / `titleProvider`（不再只改 unknown 与防重）
+- `navigationBarCustom` 标题回落改为读环境中的 `Navigator.titleProvider`
+
+### Changed
+
+- 本页环境值 `@Environment(\.routeSettings)` 重命名为 `@Environment(\.currentRoute)`
+- 包内日志开关 `isLog` 重命名为 `debug`（默认 `false`；`Get.debug` 同步）
+
 ## [1.0.0] - 2026-09-14
 
 ### Added
@@ -13,7 +24,7 @@
 - `Navigator` 多 Tab 具名路由引擎（`pushNamed` / `pop` / 监听器）
 - `Get` GetX 风格门面与 `setup` 注入（由 `NavigatorShort` 重命名）
 - `navigationBarCustom`（iOS / Mac Catalyst）
-- 包内 `dlog` 调试日志（`Navigator.isLog` 开关；外部不可见）
+- 包内 `dlog` 由 `Navigator.debug` / `Get.debug` 控制（默认 `false`）
 - `setup(unknownRoute:)`：未知目标回退路由（`String`，不可为空）；原目标写入 `args[intendedRoute]`
 
 ### Fixed

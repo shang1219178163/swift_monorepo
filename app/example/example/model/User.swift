@@ -44,7 +44,7 @@ struct User {
     @CodingKey("avatar_url", alias: ["avatar", "avatarUrl"])
     let avatar: String?
 
-    @CodingKey("age", defaultValue: 0)
+    @CodingKey("age", defaultValue: 18)
     let age: Int
 
     let score: Double

@@ -10,7 +10,7 @@ SwiftUI 具名路由引擎（无业务路由表）：多 Tab `NavigationPath`、
 
 ## 要求
 
-- iOS 16+ / Mac Catalyst 16+
+- iOS 16+ / Mac Catalyst 16+（引擎亦可在 macOS 13+ 编译；`navigationBarCustom` 仅 iOS / Mac Catalyst）
 - Swift 6.1+
 
 ## 安装
@@ -68,7 +68,7 @@ Task {
 Get.back(result: ["ok": true])
 ```
 
-页面内用 `@Environment(\.routeSettings)` 取当前页参数。
+页面内用 `@Environment(\.currentRoute)` 取当前页参数。
 
 **返回值约定：**
 
@@ -78,7 +78,7 @@ Get.back(result: ["ok": true])
 
 ## 路由跳转方法
 
-日常推荐用 `Get`（GetX 风格）；需要细粒度控制时用 `Get.shared`（即 `Navigator`）。须先 `setup`；`onRouteChange` / `navigationBarCustom` 依赖 `@EnvironmentObject` 中的同一引擎实例。
+日常推荐用 `Get`（GetX 风格）；需要细粒度控制时用 `Get.shared`（即 `Navigator`）。须先 `setup`；`onRouteChanged` / `onTabChanged` / `navigationBarCustom` 依赖 `@EnvironmentObject` 中的同一引擎实例。
 
 ### 对照表
 
@@ -138,17 +138,21 @@ nav.pop(count: 1, result: ["ok": true])
 | API | 说明 |
 | --- | --- |
 | `navigatorDestination(destination:)` | 在 `NavigationStack` 上挂载 `RouteSettings` destination |
-| `onRouteChange(_:)` | 本页级路由变化监听（出栈后自动注销） |
-| `addListener` / `removeListener` | 全局监听；返回 `RouteListenerID` |
+| `onRouteChanged(_:)` | 本页级路由变化监听（出栈后自动注销）；**不含**切 Tab |
+| `onTabChanged(_:)` | 本页级 Tab 切换监听（`from` / `to` 为下标） |
+| `addListener` / `addTabListener` / `removeListener` | 全局路由 / Tab 监听；同一 `RouteListenerID` 可注销 |
 | `pathBinding(for:)` | 某 Tab 的 `NavigationPath` 绑定 |
 
 ```swift
 NavigationStack(path: Get.shared.pathBinding(for: tab)) {
     RootView()
         .navigatorDestination { AppRouter.destination($0) }
-        .onRouteChange { from, to in
+        .onRouteChanged { from, to in
             print("\(from?.name ?? "root") → \(to?.name ?? "root")")
         }
+}
+.onTabChanged { from, to in
+    print("tab \(from) → \(to)")
 }
 ```
 
@@ -160,12 +164,13 @@ NavigationStack(path: Get.shared.pathBinding(for: tab)) {
 | `routeName` / `routeNamePre` | 同上的路由名 |
 | `pageRouteNames` / `routes` | **当前选中 Tab** 路由名栈（自底向顶） |
 | `canPop` | 当前 Tab 是否可 pop |
-| `currentSettings` / `currentArgs` | 当前 Tab 栈顶（本页优先用 `@Environment(\.routeSettings)`） |
+| `currentSettings` / `currentArgs` | 当前 Tab 栈顶（本页优先用 `@Environment(\.currentRoute)`） |
 | `isStackEmpty(for:)` | 指定 Tab 栈是否为空 |
-| `isLog` | 是否打印路由日志 |
+| `debug` | 为 `true` 时打印包内路由日志；默认 `false` |
 | `unknownRoute` | 必填；目标不存在时的回退路由名（非空） |
 | `NavigatorArgKey.intendedRoute` | 回退时写入 args 的原目标键 |
-| `Get.reset()` | 清空引擎（测试 / Preview） |
+| `Get.reset()` | 先结束未决 `await`，再清空引擎（测试 / Preview） |
+| `Navigator.titleProvider` / `Get.titleProvider` | 导航栏标题回落；`setup` 再次调用会覆盖 |
 
 ## 其它类型
 
@@ -173,7 +178,7 @@ NavigationStack(path: Get.shared.pathBinding(for: tab)) {
 | --- | --- |
 | `RouteSettings` | `name` + `args`；`waitForResult` / `complete` |
 | `AppPage` | 具名路由 + `@ViewBuilder` 页面（`preventDuplicates`） |
-| `navigationBarCustom` | 自定义导航栏（标题可回落 `titleProvider`） |
+| `navigationBarCustom` | 自定义导航栏（标题可回落环境中的 `Navigator.titleProvider`） |
 
 ## 开发
 

@@ -15,7 +15,10 @@ public typealias RoutePredicate = (String) -> Bool
 public typealias RouteContains = (String) -> Bool
 
 /// 路由变化回调（对齐 Flutter `void Function({Route? from, Route? to})`）
-public typealias RouteChangeHandler = (_ from: RouteSettings?, _ to: RouteSettings?) -> Void
+public typealias RouteChangedHandler = (_ from: RouteSettings?, _ to: RouteSettings?) -> Void
+
+/// Tab 切换回调（`from` / `to` 为 Tab 下标，始终有值）
+public typealias TabChangedHandler = (_ from: Int, _ to: Int) -> Void
 
 /// `addListener` 返回的注销凭证（Swift 闭包不可比，用 token 代替函数引用）
 public struct RouteListenerID: Hashable, Sendable {
@@ -40,17 +43,24 @@ private final class RouteResultBox: @unchecked Sendable {
 public final class RouteSettings: Hashable {
     public let name: String
     public var args: [String: Any]?
-
+    
     private var continuation: CheckedContinuation<RouteResultBox, Never>?
     /// `complete` 早于 `waitForResult` 时暂存，避免丢结果 / await 挂死
     private var pendingResult: RouteResultBox?
     private var hasCompleted = false
-
+    
     public init(name: String, args: [String: Any]? = nil) {
         self.name = name
         self.args = args
     }
-
+    
+    public func toJson() -> [String: Any] {
+        return [
+            "name": name,
+            "args": args ?? [:],
+        ]
+    }
+    
     /// 挂起直到本页被 `complete`（通常由 `pop(result:)` 触发）
     public func waitForResult() async -> [String: Any]? {
         if hasCompleted {
@@ -72,7 +82,7 @@ public final class RouteSettings: Hashable {
             continuation = cont
         }.value
     }
-
+    
     /// 结束等待；`result` 即对应 `await pushNamed` 的返回值
     public func complete(with result: [String: Any]? = nil) {
         guard !hasCompleted else { return }
@@ -85,11 +95,11 @@ public final class RouteSettings: Hashable {
             pendingResult = boxed
         }
     }
-
+    
     public nonisolated static func == (lhs: RouteSettings, rhs: RouteSettings) -> Bool {
         lhs === rhs
     }
-
+    
     public nonisolated func hash(into hasher: inout Hasher) {
         hasher.combine(ObjectIdentifier(self))
     }
@@ -104,9 +114,9 @@ public final class AppPage {
     public let title: String?
     /// 对齐 GetX `preventDuplicates`：栈顶已是同名时不再 push
     public let preventDuplicates: Bool
-
+    
     private let pageBuilder: @MainActor (RouteSettings) -> AnyView
-
+    
     /// - Parameters:
     ///   - name: 路径，如 `/settings`
     ///   - title: 可选标题
@@ -124,7 +134,7 @@ public final class AppPage {
         self.preventDuplicates = preventDuplicates
         self.pageBuilder = { settings in AnyView(page(settings)) }
     }
-
+    
     /// 构建页面（对齐 GetPageRoute 最终 `page()`）
     public func build(_ settings: RouteSettings) -> AnyView {
         pageBuilder(settings)
@@ -133,15 +143,15 @@ public final class AppPage {
 
 // MARK: - 当前页 RouteSettings
 
-private struct RouteSettingsKey: EnvironmentKey {
+private struct CurrentRouteKey: EnvironmentKey {
     static let defaultValue: RouteSettings? = nil
 }
 
 extension EnvironmentValues {
     /// 本页路由；优先于 `Navigator.currentArgs`（栈顶全局值）
-    public var routeSettings: RouteSettings? {
-        get { self[RouteSettingsKey.self] }
-        set { self[RouteSettingsKey.self] = newValue }
+    public var currentRoute: RouteSettings? {
+        get { self[CurrentRouteKey.self] }
+        set { self[CurrentRouteKey.self] = newValue }
     }
 }
 
@@ -150,37 +160,41 @@ extension EnvironmentValues {
 /// 路由管理器：多 Tab `NavigationPath` + 具名路由栈。
 @MainActor
 public final class Navigator: ObservableObject {
-    /// 为 true 时每次路由变化打印日志
-    public static var isLog = false
-
-    /// 当前选中 Tab；切换时会把 `route` 同步为该 Tab 栈顶（`currentSettings`）
+    /// 为 true 时打印包内路由日志；默认 false
+    public static var debug = false
+    
+    /// 当前选中 Tab；切换时同步 `route` 并通知 tab listener（不走路由回调）
     @Published public var selectedTab: Int {
         didSet {
             guard oldValue != selectedTab else { return }
             routePre = route
             route = currentSettings
-            dlog("selectedTab \(oldValue) → \(selectedTab), route: \(route?.name ?? "root")")
+            notifyTabListeners(from: oldValue, to: selectedTab)
         }
     }
-
+    
     /// 仅经 `pathBinding` / 命名 push·pop 变更
     @Published public private(set) var pathTabs: [NavigationPath]
-
+    
     /// 与 path 等深的路由快照（与 NavigationPath 中为同一 RouteSettings 实例）
     private var routeTabs: [[RouteSettings]]
-    private let containsRoute: RouteContains
+    /// 路由名是否存在（由业务注入；`Get.setup` 再次调用会覆盖）
+    public var containsRoute: RouteContains
     /// 栈顶同名时是否拒绝 push（由业务注入；`nil` 表示不检查）
     public var preventsDuplicate: ((String) -> Bool)?
     /// 目标路由不存在时回退到此路由名；须已被 `containsRoute` 认可。
     public var unknownRoute: String
-
+    /// 导航栏标题回落（`navigationBarCustom` 从环境中的引擎读取）
+    public var titleProvider: RouteTitleProvider?
+    
     /// 之前路由（最近一次跳转 / 切 Tab 前的 `route`）
     public private(set) var routePre: RouteSettings?
     /// 当前「焦点」路由：最近一次跳转的 `to`，或切 Tab 后的栈顶；栈空则为 nil（Tab 根）
     public private(set) var route: RouteSettings?
-
-    private var listeners: [(id: RouteListenerID, handler: RouteChangeHandler)] = []
-
+    
+    private var listeners: [(id: RouteListenerID, handler: RouteChangedHandler)] = []
+    private var tabListeners: [(id: RouteListenerID, handler: TabChangedHandler)] = []
+    
     /// - Parameters:
     ///   - tabCount: Tab 数量（由业务传入）
     ///   - initialTab: 初始选中 Tab
@@ -192,48 +206,66 @@ public final class Navigator: ObservableObject {
         initialTab: Int = 0,
         containsRoute: @escaping RouteContains,
         preventsDuplicate: ((String) -> Bool)? = nil,
+        titleProvider: RouteTitleProvider? = nil,
         unknownRoute: String
     ) {
         precondition(tabCount > 0, "tabCount must be > 0")
         precondition((0..<tabCount).contains(initialTab), "initialTab must be in 0..<tabCount")
         precondition(!unknownRoute.isEmpty, "unknownRoute must not be empty")
-        self.selectedTab = initialTab
         self.containsRoute = containsRoute
         self.preventsDuplicate = preventsDuplicate
+        self.titleProvider = titleProvider
         self.unknownRoute = unknownRoute
         pathTabs = Array(repeating: NavigationPath(), count: tabCount)
         routeTabs = Array(repeating: [], count: tabCount)
+        // 须在 routeTabs 就绪后赋值，避免 didSet 通知时栈未初始化
+        self.selectedTab = initialTab
     }
-
+    
+    /// 结束所有未决 `waitForResult`。`Get.reset()` / 重建引擎前必须调用，避免 continuation 泄漏。
+    public func finishPendingWaits() {
+        for settings in routeTabs.joined() {
+            settings.complete(with: nil)
+        }
+    }
+    
     /// 当前 Tab 导航路径（只读；写入请用 `pathBinding` 或命名 API）
     public var path: NavigationPath {
         guard pathTabs.indices.contains(selectedTab) else { return NavigationPath() }
         return pathTabs[selectedTab]
     }
-
+    
     /// 当前 Tab 路由栈（自底向顶）
     public var pageRoutes: [RouteSettings] {
         guard routeTabs.indices.contains(selectedTab) else { return [] }
         return routeTabs[selectedTab]
     }
-
+    
     public var routeName: String? { route?.name }
     public var routeNamePre: String? { routePre?.name }
-    public var pageRouteNames: [String] { pageRoutes.map(\.name) }
-
+    public var pageRouteNames: [String] { routes }
+    
     // MARK: - 路由监听
-
+    
     @discardableResult
-    public func addListener(_ handler: @escaping RouteChangeHandler) -> RouteListenerID {
+    public func addListener(_ handler: @escaping RouteChangedHandler) -> RouteListenerID {
         let id = RouteListenerID()
         listeners.append((id, handler))
         return id
     }
-
+    
+    @discardableResult
+    public func addTabListener(_ handler: @escaping TabChangedHandler) -> RouteListenerID {
+        let id = RouteListenerID()
+        tabListeners.append((id, handler))
+        return id
+    }
+    
     public func removeListener(_ id: RouteListenerID) {
         listeners.removeAll { $0.id == id }
+        tabListeners.removeAll { $0.id == id }
     }
-
+    
     private func notifyListeners(from: RouteSettings?, to: RouteSettings?) {
         routePre = from
         route = to
@@ -243,7 +275,15 @@ public final class Navigator: ObservableObject {
         }
         dlog("route: \(from?.name ?? "root") → \(to?.name ?? "root"), stack: \(pageRouteNames)")
     }
-
+    
+    private func notifyTabListeners(from: Int, to: Int) {
+        let snapshot = tabListeners
+        for item in snapshot {
+            item.handler(from, to)
+        }
+        dlog("tab: \(from) → \(to), route: \(route?.name ?? "root")")
+    }
+    
     public func pathBinding(for tab: Int) -> Binding<NavigationPath> {
         Binding(
             get: {
@@ -260,42 +300,36 @@ public final class Navigator: ObservableObject {
             }
         )
     }
-
+    
     public func isStackEmpty(for tab: Int) -> Bool {
         guard pathTabs.indices.contains(tab) else { return true }
         return pathTabs[tab].isEmpty
     }
-
-    public var canPop: Bool {
-        guard routeTabs.indices.contains(selectedTab) else { return false }
-        return !routeTabs[selectedTab].isEmpty
-    }
-
-    public var currentSettings: RouteSettings? {
-        guard routeTabs.indices.contains(selectedTab) else { return nil }
-        return routeTabs[selectedTab].last
-    }
-
-    /// 当前 Tab 栈顶参数（跨页/嵌套勿用；本页请用 `@Environment(\.routeSettings)`）
+    
+    public var canPop: Bool { !pageRoutes.isEmpty }
+    
+    public var currentSettings: RouteSettings? { pageRoutes.last }
+    
+    /// 当前 Tab 栈顶参数（跨页/嵌套勿用；本页请用 `@Environment(\.currentRoute)`）
     public var currentArgs: [String: Any]? { currentSettings?.args }
-
+    
     /// 当前 Tab 路由名栈（自底向顶）
     public var routes: [String] {
         guard routeTabs.indices.contains(selectedTab) else { return [] }
         return routeTabs[selectedTab].map(\.name)
     }
-
+    
     // MARK: - 命名路由 API
     // 返回值 = 目标页 `pop(result:)` / 侧滑（nil）
     // 未打开页面（无 unknown 可回退、或防重跳过）时直接返回 nil
-
+    
     /// 压入新页并等待其 `pop(result:)`；返回值即该 result（侧滑为 nil）。
     @discardableResult
     public func pushNamed(_ name: String, args: [String: Any] = [:]) async -> [String: Any]? {
         guard let settings = appendRoute(name, args: args) else { return nil }
         return await settings.waitForResult()
     }
-
+    
     /// 先 pop 当前页（`result` 交给**被替换页**的 await），再 push 新页。
     /// - Returns: **新页** 之后 `pop(result:)` 的值（不是参数 `result`）。
     @discardableResult
@@ -309,7 +343,7 @@ public final class Navigator: ObservableObject {
         if canPop { pop(result: result) }
         return await pushNamed(name, args: args)
     }
-
+    
     /// 先 `popUntil`，再 push 新页。
     /// - Parameter result: 交给最后一次被 pop 掉的那一页的 await。
     /// - Returns: **新页** 之后 `pop(result:)` 的值。
@@ -324,24 +358,24 @@ public final class Navigator: ObservableObject {
         popUntil(predicate, result: result)
         return await pushNamed(name, args: args)
     }
-
+    
     /// - Parameter count: 多级 pop 便捷参数。
     /// - Parameter result: 回传给**栈顶**被移除页的 `await pushNamed`。
     public func pop(count: Int = 1, result: [String: Any]? = nil) {
         guard routeTabs.indices.contains(selectedTab) else { return }
         let popCount = min(count, path.count, routeTabs[selectedTab].count)
         guard popCount > 0 else { return }
-
+        
         var stack = routeTabs[selectedTab]
         let removed = Array(stack.suffix(popCount))
         stack.removeLast(popCount)
         routeTabs[selectedTab] = stack
-
+        
         // 仅栈顶（removed 末项）带 result；其余 complete(nil)
         for (index, settings) in removed.enumerated() {
             settings.complete(with: index == removed.count - 1 ? result : nil)
         }
-
+        
         var nextPath = path
         nextPath.removeLast(popCount)
         var paths = pathTabs
@@ -350,29 +384,26 @@ public final class Navigator: ObservableObject {
         notifyListeners(from: removed.last, to: stack.last)
         log(prefix: "pop >>> ")
     }
-
+    
     /// 回退直到 `predicate` 为 true（该页保留）；未命中则清空栈。
     /// - Parameter result: 交给最后一次被 pop 掉的栈顶页。
     public func popUntil(_ predicate: @escaping RoutePredicate, result: [String: Any]? = nil) {
         guard routeTabs.indices.contains(selectedTab) else { return }
-        let stack = routeTabs[selectedTab]
+        let stack = pageRoutes
         guard !stack.isEmpty else { return }
         if let top = stack.last, predicate(top.name) { return }
-
-        var popCount = 0
-        for entry in stack.reversed() {
-            if predicate(entry.name) { break }
-            popCount += 1
-        }
+        let popCount = stack.reversed().prefix { !predicate($0.name) }.count
         if popCount > 0 {
             pop(count: popCount, result: result)
         }
     }
-
+    
     // MARK: - Private
-
+    
     /// 将请求解析为实际入栈的 name + args；无法落地时返回 nil。
-    private func resolveTarget(name: String, args: [String: Any]) -> (name: String, args: [String: Any])? {
+    private func resolveTarget(name: String, args: [String: Any]) -> (
+        name: String, args: [String: Any]
+    )? {
         if containsRoute(name) {
             return (name, args)
         }
@@ -386,13 +417,14 @@ public final class Navigator: ObservableObject {
         dlog("⚠️ Route not found: \(name) → \(fallback)")
         return (fallback, merged)
     }
-
+    
     @discardableResult
     private func appendRoute(_ name: String, args: [String: Any]) -> RouteSettings? {
         guard let target = resolveTarget(name: name, args: args) else { return nil }
-
+        
         if preventsDuplicate?(target.name) == true,
-           currentSettings?.name == target.name {
+           currentSettings?.name == target.name
+        {
             // unknown 回退：原目标不同则仍允许再 push，以便刷新参数展示
             let sameIntended: Bool = {
                 guard target.name == unknownRoute else { return true }
@@ -405,39 +437,38 @@ public final class Navigator: ObservableObject {
                 return nil
             }
         }
-
+        
         let settings = RouteSettings(
             name: target.name,
             args: target.args.isEmpty ? nil : target.args
         )
         let from = routeTabs[selectedTab].last
-
+        
         var nextRoutes = routeTabs[selectedTab]
         nextRoutes.append(settings)
         routeTabs[selectedTab] = nextRoutes
-
+        
         var nextPath = path
         nextPath.append(settings)
         var paths = pathTabs
         paths[selectedTab] = nextPath
         pathTabs = paths
-
+        
         notifyListeners(from: from, to: settings)
-        log(prefix: "pushNamed >>> ")
         return settings
     }
-
+    
     /// 仅用于系统手势改 path：补齐 routeTabs，并以 nil complete（无业务 result）
     private func syncStacks(withPathCount pathCount: Int, tab: Int) {
         guard routeTabs.indices.contains(tab) else { return }
         let routeCount = routeTabs[tab].count
-        #if DEBUG
+#if DEBUG
         if pathCount > routeCount {
             assertionFailure(
                 "NavigationPath grew without named API (path=\(pathCount), routes=\(routeCount)). Use pushNamed / pathBinding pops only."
             )
         }
-        #endif
+#endif
         guard routeCount > pathCount else { return }
         let removed = Array(routeTabs[tab].suffix(from: pathCount))
         for settings in removed {
@@ -446,7 +477,7 @@ public final class Navigator: ObservableObject {
         routeTabs[tab] = Array(routeTabs[tab].prefix(pathCount))
         notifyListeners(from: removed.last, to: routeTabs[tab].last)
     }
-
+    
     private func log(prefix: String = "") {
         let depths = pathTabs.enumerated().map { "\($0.offset)_\($0.element.count)" }
         dlog("\(prefix) tab:\(selectedTab) path: \(depths.joined(separator: ",")), routes: \(routes)")
@@ -462,22 +493,41 @@ extension View {
     ) -> some View {
         navigationDestination(for: RouteSettings.self) { settings in
             destination(settings)
-                .environment(\.routeSettings, settings)
+                .environment(\.currentRoute, settings)
         }
     }
-
+    
     /// 路由变化监听。进入注册；**被新页盖住仍保留**；本页 `RouteSettings` 出栈（pop）后销毁。
-    public func onRouteChange(_ handler: @escaping RouteChangeHandler) -> some View {
-        modifier(RouteChangeListenerModifier(handler: handler))
+    public func onRouteChanged(_ handler: @escaping RouteChangedHandler) -> some View {
+        modifier(
+            StackBoundListenerModifier { navigator, mySettings, box in
+                let id = navigator.addListener { from, to in
+                    handler(from, to)
+                    if let mySettings, from === mySettings {
+                        navigator.removeListener(id)
+                        box.id = nil
+                    }
+                }
+                box.id = id
+            }
+        )
+    }
+    
+    /// Tab 切换监听。进入注册；本页出栈后销毁（根页一直保持）。
+    public func onTabChanged(_ handler: @escaping TabChangedHandler) -> some View {
+        modifier(
+            StackBoundListenerModifier { navigator, _, box in
+                box.id = navigator.addTabListener(handler)
+            }
+        )
     }
 }
 
-/// 子页级路由监听：栈内存活期间保持，避免 push 盖住后收不到返回事件。
-/// 依赖 `@EnvironmentObject` 中的 `Navigator`（与 `navigationBarCustom` 一致）。
-private struct RouteChangeListenerModifier: ViewModifier {
+/// 子页级监听：栈内存活期间保持；出栈后注销。
+private struct StackBoundListenerModifier: ViewModifier {
     @EnvironmentObject private var navigator: Navigator
-    @Environment(\.routeSettings) private var routeSettings
-    let handler: RouteChangeHandler
+    @Environment(\.currentRoute) private var currentRoute
+    let register: (Navigator, RouteSettings?, ListenerTokenBox) -> Void
     @State private var box = ListenerTokenBox()
 
     func body(content: Content) -> some View {
@@ -488,24 +538,18 @@ private struct RouteChangeListenerModifier: ViewModifier {
 
     private func registerIfNeeded() {
         guard box.id == nil else { return }
-        let mySettings = routeSettings
-        let id = navigator.addListener { from, to in
-            handler(from, to)
-            if let mySettings, from === mySettings {
-                navigator.removeListener(id)
-                box.id = nil
-            }
-        }
-        box.id = id
+        register(navigator, currentRoute, box)
     }
 
     private func unregisterIfRouteGone() {
         guard let id = box.id else { return }
-        if let settings = routeSettings {
-            guard !navigator.pageRoutes.contains(where: { $0 === settings }) else { return }
+        let stillOnStack: Bool
+        if let settings = currentRoute {
+            stillOnStack = navigator.pageRoutes.contains { $0 === settings }
         } else {
-            guard navigator.pageRoutes.isEmpty else { return }
+            stillOnStack = !navigator.pageRoutes.isEmpty
         }
+        guard !stillOnStack else { return }
         navigator.removeListener(id)
         box.id = nil
     }
