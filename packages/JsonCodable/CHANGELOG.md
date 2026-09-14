@@ -6,11 +6,7 @@
 
 ## [Unreleased]
 
-### Changed
-
-- 宏名 `@Codable` 重命名为 `@JsonCodable`
-
-## [1.0.0] - 2026-09-11
+## [1.0.0] - 2026-09-14
 
 ### Fixed
 
@@ -21,6 +17,7 @@
 
 ### Changed
 
+- 宏名 `@Codable` 重命名为 `@JsonCodable`
 - JSON 辅助 API 重命名并调整语义：
   - `fromData(_:coder:)`：`Data` → 模型
   - `fromJson(_:coder:)`：字典 → 模型

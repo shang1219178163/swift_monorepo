@@ -6,11 +6,7 @@
 
 ## [Unreleased]
 
-### Changed
-
-- JsonCodable 宏名 `@Codable` → `@JsonCodable`
-
-## [1.0.0] - 2026-09-11
+## [1.0.0] - 2026-09-14
 
 ### Added
 
@@ -28,6 +24,7 @@
 
 ### Changed
 
+- JsonCodable 宏名 `@Codable` → `@JsonCodable`
 - JsonCodable：`aliases` → `alias`；JSON 辅助 API 为 `fromData` / `fromJson` / `toJson`
 - JsonCodable / Navigator 调试日志为包内 `package func dlog`
 - Navigator 路由 API 不再 `throws`；门面 `NavigatorShort` → `Get`
