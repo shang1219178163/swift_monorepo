@@ -26,5 +26,6 @@
 
 - JsonCodable 宏名 `@Codable` → `@JsonCodable`
 - JsonCodable：`aliases` → `alias`；JSON 辅助 API 为 `fromData` / `fromJson` / `toJson`
+- JsonCodable：`defaultValue` 键缺失抛 `keyNotFound`，JSON `null` 用默认值兜底
 - JsonCodable / Navigator 调试日志为包内 `package func dlog`
 - Navigator 路由 API 不再 `throws`；门面 `NavigatorShort` → `Get`
